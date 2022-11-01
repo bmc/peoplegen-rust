@@ -1,0 +1,15 @@
+[package]
+name = "peoplegen"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = "0.8.3"
+# Clap is for argument parsing.
+clap = "4.0.18"
+# Tailcall transforms functions to tail-recursive ones.
+# https://crates.io/crates/tailcall
+tailcall = "0.1.6"
+chrono = "0.4"
