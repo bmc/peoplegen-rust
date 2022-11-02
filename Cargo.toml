@@ -13,3 +13,5 @@ clap = "4.0.18"
 # https://crates.io/crates/tailcall
 tailcall = "0.1.6"
 chrono = "0.4"
+csv = "1.1.6"
+
