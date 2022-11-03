@@ -3,7 +3,6 @@ use std::process;
 use crate::args::{Arguments, HeaderFormat, parse_args};
 
 pub mod numlib;
-pub mod path;
 pub mod args;
 
 fn main() {
