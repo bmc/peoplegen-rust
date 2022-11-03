@@ -1,12 +1,15 @@
+use std::ffi::OsStr;
 use std::env;
+use std::path::PathBuf;
 use std::collections::HashMap;
 use clap::{Command, Arg, ArgAction};
 use chrono::{Duration, Utc, Datelike};
 use crate::numlib::parse_int;
-use crate::path::file_extension;
 
 const STARTING_YEAR_DEFAULT_DELTA: u32 = 90;
 const ENDING_YEAR_DEFAULT_DELTA: u32 = 18;
+const ENV_FIRST_NAMES_FILE: &str = "PEOPLEGEN_FIRST_NAMES";
+const ENV_LAST_NAMES_FILE: &str = "PEOPLEGEN_LAST_NAMES";
 
 #[derive(Debug, Copy, Clone)]
 pub enum HeaderFormat {
@@ -26,7 +29,9 @@ pub struct Arguments {
     year_min: u32,
     year_max: u32,
     verbose: bool,
-    output_file: String
+    first_names_file: PathBuf,
+    last_names_file: PathBuf,
+    output_file: PathBuf
 }
 
 /// Parse the command line arguments into an `Arguments` structure.
@@ -50,6 +55,8 @@ pub fn parse_args() -> Result<Arguments, String> {
 
     let default_year_min = year_before_now(STARTING_YEAR_DEFAULT_DELTA);
     let default_year_max = year_before_now(ENDING_YEAR_DEFAULT_DELTA);
+    let first_names_default = getenv(ENV_FIRST_NAMES_FILE);
+    let last_names_default = getenv(ENV_LAST_NAMES_FILE);
 
     let parser = Command::new("peoplegen")
         .version("0.1.0")
@@ -71,10 +78,19 @@ pub fn parse_args() -> Result<Arguments, String> {
                  .short('F')
                  .long("first-names")
                  .value_name("PATH")
-                 .help(
+                 .help(format!(
 "Path to CSV file containing first names and genders. The first
 column must be the name, and the second is the gender (currently
-'F' or 'M'). The file is assumed NOT to have a header."))
+'F' or 'M'). The file is assumed NOT to have a header. If not specified,
+defaults to the value of environment variable {}.", ENV_FIRST_NAMES_FILE)))
+        .arg(Arg::new("last-names")
+                 .short('L')
+                 .long("last-names")
+                 .value_name("PATH")
+                 .help(format!(
+"Path to text file containing last names, one per line. If not
+specified, defaults to the value of environment variable
+{}.", ENV_LAST_NAMES_FILE)))
         .arg(Arg::new("ssn")
                  .short('s')
                  .long("ssn")
@@ -139,6 +155,16 @@ column must be the name, and the second is the gender (currently
         .get_one::<String>("header-format")
         .map(|s| parse_header_format(s))
         .unwrap()?;
+    let output_file = matches
+        .get_one::<String>("output")
+        .map(PathBuf::from)
+        .unwrap();
+    let first_names_file = matches
+         .get_one::<String>("first-names")
+         .unwrap_or(&first_names_default);
+    let last_names_file = matches
+         .get_one::<String>("last-names")
+         .unwrap_or(&last_names_default);
 
     validate(Arguments {
         female_percent,
@@ -148,9 +174,22 @@ column must be the name, and the second is the gender (currently
         header_format,
         year_min,
         year_max,
+        first_names_file: PathBuf::from(first_names_file),
+        last_names_file: PathBuf::from(last_names_file),
         verbose: *matches.get_one::<bool>("verbose").unwrap(),
-        output_file: matches.get_one::<String>("output").unwrap().to_string()
+        output_file: output_file
     })
+}
+
+fn getenv(s: &str) -> String {
+    // match env::var_os(s) {
+    //     Some(v) => v.into_string().unwrap(),
+    //     None => String::new()
+    // }
+
+    env::var_os(s)
+        .map(|v| v.into_string().unwrap())
+        .unwrap_or_else(|| String::new())
 }
 
 fn year_before_now(years: u32) -> u32 {
@@ -159,23 +198,48 @@ fn year_before_now(years: u32) -> u32 {
     (Utc::now() - Duration::weeks(y * 52)).year() as u32
 }
 
+fn path_is_empty(p: &PathBuf) -> bool {
+    p.as_path().as_os_str() == ""
+}
+
 /// Cross-validate the parsed arguments.
 fn validate(args: Arguments) -> Result<Arguments, String> {
+    fn file_ext(p: &PathBuf) -> &str {
+        p.extension().and_then(OsStr::to_str).unwrap_or("")
+    }
+
     if (args.female_percent + args.male_percent) != 100 {
         Err(String::from("Female and male percentages must add up to 100."))
     }
-    else if file_extension(&args.output_file).unwrap_or("") != "csv" {
+
+    else if file_ext(&args.output_file) != "csv" {
         Err(String::from(format!(
             "Output path \"{}\" does not have required \".csv\" extension.",
-            args.output_file
+            args.output_file.display()
         )))
     }
+
     else if args.year_min > args.year_max {
         Err(String::from(format!(
             "Minimum year {} exceeds maximum year {}.",
             args.year_min, args.year_max
         )))
     }
+
+    else if path_is_empty(&args.first_names_file) {
+        Err(String::from(format!(
+            "First names file not specified, and {} is not set in environment.",
+            ENV_FIRST_NAMES_FILE
+        )))
+    }
+
+    else if path_is_empty(&args.last_names_file) {
+        Err(String::from(format!(
+            "Last names file not specified, and {} is not set in environment.",
+            ENV_LAST_NAMES_FILE
+        )))
+    }
+
     else {
         Ok(args)
     }
