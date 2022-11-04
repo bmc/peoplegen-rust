@@ -14,8 +14,12 @@ pub mod people;
 pub mod path;
 
 fn main() {
-    match parse_args()
-        .and_then(|args| run(args)) {
+    let res = result! {
+        let args <- parse_args();
+        run(args)
+    };
+
+    match res {
         Ok(_) => process::exit(0),
         Err(msg) => {
             eprintln!{"{}", msg};
