@@ -89,3 +89,8 @@ array. For instance:
 JSON files of this form are well-suited for ingesting into distributed
 systems such as Apache Spark, for processing with line-based Unix tools,
 etc.
+
+## License
+
+See the `LICENSE` file in the source distribution. (Basically, I don't
+care what you do with this code. Just don't bug me about it.)
