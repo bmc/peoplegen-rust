@@ -66,8 +66,8 @@ end with `.csv`.
 
 **`json`**
 
-Generate a "normal" JSON file. The output is of the following form (though it
-is _not_ pretty-printed):
+Generate a "normal" JSON file. The output file must end with `.json`.
+The JSON is of the following form (though it is _not_ pretty-printed):
 
 ```json
 {"people": [
@@ -81,9 +81,10 @@ is _not_ pretty-printed):
 **`jsonl`**
 
 Creates a [JSON Lines](https://jsonlines.org/) file from a vector of randomly
-generated `Person` objects. JSON Lines is a line-by-line JSON format, where
-each object occupies its own text line, and there's no enclosing object or
-array. For instance:
+generated `Person` objects. The output file must end with `.json`.
+
+JSON Lines is a line-by-line JSON format, where each object occupies its own
+text line, and there's no enclosing object or array. For instance:
 
 ```json
 {"first_name":"Cleveland","middle_name":"Darren","last_name":"McQuaid","gender":"M","birth_date":"1993-01-14","ssn":"934-79-3074"}
