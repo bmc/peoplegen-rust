@@ -29,7 +29,7 @@ However, do _not_ expect me to maintain this tool rigorously. It's a playground
 for me, as well as something I use occasionally. That's all.
 
 ----
-
+jjj
 ## Installation
 
 Clone this repo in the usual way. Ensure that you have a suitable, up-to-date
@@ -71,7 +71,7 @@ is _not_ pretty-printed):
 
 ```json
 {"people": [
-  {first_name":"Cleveland","middle_name":"Darren","last_name":"McQuaid","gender":"M","birth_date":"1993-01-14","ssn":"934-79-3074"},
+  {"first_name":"Cleveland","middle_name":"Darren","last_name":"McQuaid","gender":"M","birth_date":"1993-01-14","ssn":"934-79-3074"},
   {"first_name":"Percy","middle_name":"Jasper","last_name":"Drohane","gender":"M","birth_date":"1951-01-27","ssn":"963-73-1208"},
   {"first_name":"Aurora","middle_name":"Sanora","last_name":"Crookshank","gender":"F","birth_date":"1997-09-14","ssn":"967-41-1818"},
   ...
@@ -86,7 +86,7 @@ each object occupies its own text line, and there's no enclosing object or
 array. For instance:
 
 ```json
-{first_name":"Cleveland","middle_name":"Darren","last_name":"McQuaid","gender":"M","birth_date":"1993-01-14","ssn":"934-79-3074"}
+{"first_name":"Cleveland","middle_name":"Darren","last_name":"McQuaid","gender":"M","birth_date":"1993-01-14","ssn":"934-79-3074"}
 {"first_name":"Percy","middle_name":"Jasper","last_name":"Drohane","gender":"M","birth_date":"1951-01-27","ssn":"963-73-1208"}
 {"first_name":"Aurora","middle_name":"Sanora","last_name":"Crookshank","gender":"F","birth_date":"1997-09-14","ssn":"967-41-1818"}
 ...
