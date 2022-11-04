@@ -6,11 +6,15 @@ build:
 release:
 	cargo test
 	cargo build -r
+	@make docs
 
 clean:
 	cargo clean
 
-install: release
+docs:
+	cargo doc
+
+install: release docs
 	mkdir -p $(BASE_DIR)/bin
 	cp target/release/peoplegen $(BASE_DIR)/bin
 	mkdir -p $(BASE_DIR)/etc/peoplegen
