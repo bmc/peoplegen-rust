@@ -40,7 +40,13 @@ fn run(args: Arguments) -> Result<(), String> {
             &female_first_names,
             &last_names
         );
-        let total <- write_people(&args.output_file, &args, &people);
+        let total <- write_people(
+            &args.output_file,
+            args.header_format,
+            args.generate_ids,
+            args.generate_ssns,
+            &people
+        );
         println!("Wrote {} records(s) to \"{}\".",
                  total, args.output_file.display());
         ()
@@ -48,13 +54,15 @@ fn run(args: Arguments) -> Result<(), String> {
 }
 
 fn write_people(path: &PathBuf,
-                args: &Arguments,
+                header_format: HeaderFormat,
+                save_ids: bool,
+                save_ssns: bool,
                 people: &Vec<Person>) -> Result<usize, String> {
     let mut w = WriterBuilder::new()
         .from_path(path)
         .map_err(|e| format!("Can't write to \"{}\": {}", path_str(path), e))?;
 
-    let (id_header, base_headers, ssn_header) = match args.header_format {
+    let (id_header, base_headers, ssn_header) = match header_format {
         HeaderFormat::SnakeCase => {
             ("id",
              ["first_name", "middle_name", "last_name", "gender", "birth_date"],
@@ -74,13 +82,13 @@ fn write_people(path: &PathBuf,
 
     let mut header: Vec<&str> = Vec::new();
 
-    if args.generate_ids {
+    if save_ids {
         header.push(id_header);
     }
 
     header.extend(base_headers);
 
-    if args.generate_ssns {
+    if save_ssns {
         header.push(ssn_header);
     }
 
@@ -89,7 +97,7 @@ fn write_people(path: &PathBuf,
         let id = i + 1;
         let id_str = id.to_string();
         let mut rec: Vec<&String> = Vec::new();
-        if args.generate_ids {
+        if save_ids {
             rec.push(&id_str);
         }
         let birth_str = p.birth_date.format("%Y-%m-%d").to_string();
@@ -99,7 +107,7 @@ fn write_people(path: &PathBuf,
             &gender_str, &birth_str
         ]);
 
-        if args.generate_ssns {
+        if save_ssns {
             rec.push(&p.ssn);
         }
 
