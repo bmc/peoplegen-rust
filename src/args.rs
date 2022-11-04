@@ -22,6 +22,14 @@ pub enum HeaderFormat {
     Pretty
 }
 
+// The desired output format
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum OutputFormat {
+    JsonPretty,
+    JsonL,
+    Csv
+}
+
 /// Command-line arguments, as parsed.
 #[derive(Debug)]
 pub struct Arguments {
@@ -32,11 +40,11 @@ pub struct Arguments {
     pub header_format: HeaderFormat,
     pub year_min: u32,
     pub year_max: u32,
-    pub verbose: bool,
     pub male_first_names_file: PathBuf,
     pub female_first_names_file: PathBuf,
     pub last_names_file: PathBuf,
     pub output_file: PathBuf,
+    pub output_format: OutputFormat,
     pub total: u32
 }
 
@@ -137,11 +145,11 @@ specified, defaults to the value of environment variable
                  .value_parser(clap::value_parser!(u32))
                  .help(format!("The ending year for birth dates. Default: {}",
                        default_year_max)))
-        .arg(Arg::new("verbose")
-                 .short('v')
-                 .long("verbose")
-                 .action(ArgAction::SetTrue)
-                 .help("Enable verbose processing messages"))
+        .arg(Arg::new("format")
+                .short('o')
+                .long("format")
+                .default_value("csv")
+                .help("Output format, one of \"csv\", \"json\" or \"jsonl\""))
         .arg(Arg::new("output")
                  .required(true)
                  .value_name("OUTPUT_FILE")
@@ -178,10 +186,6 @@ specified, defaults to the value of environment variable
         .get_one::<String>("header-format")
         .map(|s| parse_header_format(s))
         .unwrap()?;
-    let output_file = matches
-        .get_one::<String>("output")
-        .map(PathBuf::from)
-        .unwrap();
     let male_first_names_file = matches
         .get_one::<String>("male-first-names")
         .unwrap_or(&male_first_names_default);
@@ -191,6 +195,27 @@ specified, defaults to the value of environment variable
     let last_names_file = matches
         .get_one::<String>("last-names")
         .unwrap_or(&last_names_default);
+    let output_format = matches
+        .get_one::<String>("format")
+        .map(|s| {
+            if *s == String::from("csv") {
+                Ok(OutputFormat::Csv)
+            }
+            else if *s == String::from("json") {
+                Ok(OutputFormat::JsonPretty)
+            }
+            else if *s == String::from("jsonl") {
+                Ok(OutputFormat::JsonL)
+            }
+            else {
+                Err(format!("Unknown output format: \"{}\"", s))
+            }
+        })
+        .unwrap()?;
+    let output_file = matches
+        .get_one::<String>("output")
+        .map(PathBuf::from)
+        .unwrap();
     let total = matches
         .get_one::<u32>("total")
         .map(|reference| *reference)
@@ -207,7 +232,7 @@ specified, defaults to the value of environment variable
         male_first_names_file: PathBuf::from(male_first_names_file),
         female_first_names_file: PathBuf::from(female_first_names_file),
         last_names_file: PathBuf::from(last_names_file),
-        verbose: *matches.get_one::<bool>("verbose").unwrap(),
+        output_format,
         output_file: output_file,
         total
     })
@@ -230,9 +255,18 @@ fn validate(args: Arguments) -> Result<Arguments, String> {
         Err(String::from("Female and male percentages must add up to 100."))
     }
 
-    else if file_ext(&args.output_file) != "csv" {
+    else if (args.output_format == OutputFormat::Csv) &&
+            (file_ext(&args.output_file) != "csv") {
         Err(String::from(format!(
             "Output path \"{}\" does not have required \".csv\" extension.",
+            args.output_file.display()
+        )))
+    }
+
+    else if (args.output_format != OutputFormat::Csv) &&
+            (file_ext(&args.output_file) != "json") {
+        Err(String::from(format!(
+            "Output path \"{}\" does not have required \".json\" extension.",
             args.output_file.display()
         )))
     }

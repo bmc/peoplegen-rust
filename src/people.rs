@@ -5,15 +5,18 @@
 //! - randomly generate `Person` objects
 //! - serialize generated data to CSV
 
-use std::fs::File;
-use std::path::PathBuf;
-use std::io::{self, prelude::*};
-use chrono::naive::{NaiveDate, NaiveDateTime};
-use rand::Rng;
-use rand::seq::SliceRandom;
-use csv::WriterBuilder;
+use crate::args::{Arguments, HeaderFormat, OutputFormat};
 use crate::path::path_str;
-use crate::args::{Arguments, HeaderFormat};
+use chrono::naive::{NaiveDate, NaiveDateTime};
+use csv::WriterBuilder;
+use json::JsonValue;
+use rand::seq::SliceRandom;
+use rand::Rng;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::LineWriter;
+use std::io::{self, prelude::*};
+use std::path::PathBuf;
 
 /**
  * Abstract representation of gender. Too restrictive currently, but it
@@ -22,21 +25,28 @@ use crate::args::{Arguments, HeaderFormat};
 #[derive(PartialEq)]
 pub enum Gender {
     Male,
-    Female
+    Female,
 }
 
 impl Gender {
     /**
-        Converts a `Gender` value to a string suitable for display or for
-        writing to a CSV file.
-    */
+     * Converts a `Gender` value to a string suitable for display or for
+     * writing to a CSV file.
+     */
     pub fn to_str(&self) -> &str {
         if *self == Gender::Male {
             "M"
-         }
-         else {
+        } else {
             "F"
-         }
+        }
+    }
+
+    /**
+     * Converts a `Gender` value to a string suitable for display or for
+     * writing to a CSV file.
+     */
+    pub fn to_string(&self) -> String {
+        String::from(self.to_str())
     }
 }
 
@@ -58,24 +68,39 @@ pub struct Person {
     pub last_name: String,
     pub gender: Gender,
     pub birth_date: NaiveDate,
-    pub ssn: String
+    pub ssn: String,
 }
 
+const HEADER_ID_KEY: &str = "id";
+const HEADER_FIRST_NAME_KEY: &str = "first_name";
+const HEADER_LAST_NAME_KEY: &str = "last_name";
+const HEADER_MIDDLE_NAME_KEY: &str = "middle_name";
+const HEADER_GENDER_KEY: &str = "gender";
+const HEADER_BIRTH_DATE_KEY: &str = "birth_date";
+const HEADER_SSN_KEY: &str = "ssn";
+
+const REQUIRED_HEADERS: [&str; 5] = [
+    HEADER_FIRST_NAME_KEY,
+    HEADER_MIDDLE_NAME_KEY,
+    HEADER_LAST_NAME_KEY,
+    HEADER_GENDER_KEY,
+    HEADER_BIRTH_DATE_KEY,
+];
+
 /**
-  * Read a file of names into a vector of strings.
-  *
-  * # Arguments
-  *
-  * - path: The path to the file to be read
-  *
-  * # Returns
-  *
-  * - `Ok(v)`: The file was successfully read into vector `v`
-  * - `Err(msg)`: The file could not be read, and `msg` explains why
+ * Read a file of names into a vector of strings.
+ *
+ * # Arguments
+ *
+ * - path: The path to the file to be read
+ *
+ * # Returns
+ *
+ * - `Ok(v)`: The file was successfully read into vector `v`
+ * - `Err(msg)`: The file could not be read, and `msg` explains why
 */
 pub fn read_names_file(path: &PathBuf) -> Result<Vec<String>, String> {
-    let file = File::open(path)
-        .map_err(|e| format!("\"{}\": {}", path_str(path), e))?;
+    let file = File::open(path).map_err(|e| format!("\"{}\": {}", path_str(path), e))?;
     let reader = io::BufReader::new(file);
     let mut buf: Vec<String> = Vec::new();
 
@@ -105,16 +130,18 @@ pub fn read_names_file(path: &PathBuf) -> Result<Vec<String>, String> {
  *
  * A vector containing the randomly generated `Person` objects.
  */
-pub fn make_people(args: &Arguments,
-                   male_first_names: &Vec<String>,
-                   female_first_names: &Vec<String>,
-                   last_names: &Vec<String>) -> Vec<Person> {
+pub fn make_people(
+    args: &Arguments,
+    male_first_names: &Vec<String>,
+    female_first_names: &Vec<String>,
+    last_names: &Vec<String>,
+) -> Vec<Person> {
     let epoch_start = NaiveDate::from_ymd(args.year_min as i32, 1, 1)
-                                .and_hms(0, 0, 0)
-                                .timestamp();
+        .and_hms(0, 0, 0)
+        .timestamp();
     let epoch_end = NaiveDate::from_ymd(args.year_max as i32, 12, 31)
-                              .and_hms(23, 59, 59)
-                              .timestamp();
+        .and_hms(23, 59, 59)
+        .timestamp();
     let total_males: u32 = (args.total * args.male_percent) / 100;
     let w = (args.total * args.female_percent) / 100;
     let total_females = w + (args.total - total_males - w);
@@ -125,22 +152,26 @@ pub fn make_people(args: &Arguments,
     let mut buf: Vec<Person> = Vec::new();
 
     for _ in 0..total_males {
-        let p = make_person(male_first_names,
-                            last_names,
-                            Gender::Male,
-                            epoch_start,
-                            epoch_end,
-                            &ssn_prefixes);
+        let p = make_person(
+            male_first_names,
+            last_names,
+            Gender::Male,
+            epoch_start,
+            epoch_end,
+            &ssn_prefixes,
+        );
         buf.push(p)
     }
 
     for _ in 0..total_females {
-        let p = make_person(female_first_names,
-                            last_names,
-                            Gender::Female,
-                            epoch_start,
-                            epoch_end,
-                            &ssn_prefixes);
+        let p = make_person(
+            female_first_names,
+            last_names,
+            Gender::Female,
+            epoch_start,
+            epoch_end,
+            &ssn_prefixes,
+        );
         buf.push(p)
     }
 
@@ -148,14 +179,15 @@ pub fn make_people(args: &Arguments,
     buf
 }
 
-
 /**
- * Creates a CSV file from a vector of randomly generated `Person` objects.
+ * Creates a CSV or JSON file from a vector of randomly generated `Person`
+ * objects.
  *
  * # Arguments
  *
  * - `path`: The path to the CSV file to create or overwrite
- * - `header_format`: What style of CSV header names to use
+ * - `output_format`: The output format of the file
+ * - `header_format`: What style of CSV header names or JSON keys to use.
  * - `generate_ids`: Whether or not to generate and save unique numeric IDs
  *                   for each person
  * - `save_ssns`: Whether or not to save the fake Social Security numbers
@@ -168,46 +200,191 @@ pub fn make_people(args: &Arguments,
  * - `Ok(total)`: The save was successful, and `total` people were written
  * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
  */
-pub fn write_people(path: &PathBuf,
-                    header_format: HeaderFormat,
-                    generate_ids: bool,
-                    save_ssns: bool,
-                    people: Vec<Person>) -> Result<usize, String> {
+pub fn write_people(
+    path: &PathBuf,
+    output_format: OutputFormat,
+    header_format: HeaderFormat,
+    generate_ids: bool,
+    save_ssns: bool,
+    people: Vec<Person>,
+) -> Result<usize, String> {
+    match output_format {
+        OutputFormat::Csv => write_csv(path, header_format, generate_ids, save_ssns, people),
+        OutputFormat::JsonL => write_jsonl(path, header_format, generate_ids, save_ssns, people),
+        OutputFormat::JsonPretty => {
+            write_json(path, header_format, generate_ids, save_ssns, people)
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Private Members
+// ----------------------------------------------------------------------------
+
+/**
+ * Creates a JSONL file from a vector of randomly generated `Person` objects.
+ * JSONL is a line-by-line JSON format, where each object occupies a line, and
+ * there's no enclosing object or array. For instance:
+  *
+ * ```
+ * { "first_name": "Moe", ... },
+ * { "first_name": "Larry", ... },
+ * { "first_name": "Curly", ... },
+ * ...
+ * ```
+ *
+ * JSON files of this form are well-suited for ingesting into distributed
+ * systems such as Apache Spark.
+ *
+ * # Arguments
+ *
+ * - `path`: The path to the JSON file to create or overwrite
+ * - `header_format`: What style of JSON keys to use.
+ * - `generate_ids`: Whether or not to generate and save unique numeric IDs
+ *                   for each person
+ * - `save_ssns`: Whether or not to save the fake Social Security numbers
+ * - `people`: The list of randomly generated people to save. Note that this
+ *             parameter isn't a reference and is, therefore, consumed by this
+ *             function.
+ *
+ * # Returns
+ *
+ * - `Ok(total)`: The save was successful, and `total` people were written
+ * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
+ */
+
+fn write_jsonl(
+    path: &PathBuf,
+    header_format: HeaderFormat,
+    generate_ids: bool,
+    save_ssns: bool,
+    people: Vec<Person>,
+) -> Result<usize, String> {
+    let file = File::create(path).map_err(|e| format!("{}", e))?;
+    let mut w = LineWriter::new(file);
+    let headers = get_headers(header_format);
+
+    for (i, p) in people.iter().enumerate() {
+        let id = if generate_ids { Some(i + 1) } else {None};
+
+        let jv = person_to_json_object(p, &headers, id, save_ssns)?;
+
+        let json_line = jv.dump();
+
+        w.write_fmt(format_args!("{}\n", json_line))
+            .map_err(|e| format!("Can't write to \"{}\": {}", path_str(path), e))?;
+    }
+
+    Ok(people.len())
+}
+
+/**
+ * Creates a JSON document from a vector of randomly generated `Person` objects.
+ * The JSON output is of this form (though _not_ pretty-printed):
+ *
+ * ```
+ * {"people" [
+ *   { "first_name": "Moe", ... },
+ *   { "first_name": "Larry", ... },
+ *   { "first_name": "Curly", ... },
+ *   ...
+ * ]}
+ * ```
+ *
+ * # Arguments
+ *
+ * - `path`: The path to the JSON file to create or overwrite
+ * - `header_format`: What style of JSON keys to use.
+ * - `generate_ids`: Whether or not to generate and save unique numeric IDs
+ *                   for each person
+ * - `save_ssns`: Whether or not to save the fake Social Security numbers
+ * - `people`: The list of randomly generated people to save. Note that this
+ *             parameter isn't a reference and is, therefore, consumed by this
+ *             function.
+ *
+ * # Returns
+ *
+ * - `Ok(total)`: The save was successful, and `total` people were written
+ * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
+ */
+fn write_json(
+    path: &PathBuf,
+    header_format: HeaderFormat,
+    generate_ids: bool,
+    save_ssns: bool,
+    people: Vec<Person>,
+) -> Result<usize, String> {
+
+    let file = File::create(path).map_err(|e| format!("{}", e))?;
+    let mut w = LineWriter::new(file);
+    let headers = get_headers(header_format);
+    let mut jo = JsonValue::new_object();
+    let mut ja = JsonValue::new_array();
+
+    for (i, p) in people.iter().enumerate() {
+        let id = if generate_ids { Some(i + 1) } else {None};
+
+        let jv = person_to_json_object(p, &headers, id, save_ssns)?;
+        ja.push(jv).map_err(|e| format!("{}", e))?;
+    }
+
+    jo.insert("people", ja).map_err(|e| format!("{}", e))?;
+
+    let json_str = jo.dump();
+    w.write_fmt(format_args!("{}\n", json_str))
+        .map_err(|e| format!("Can't write to \"{}\": {}", path_str(path), e))?;
+
+    Ok(people.len())
+}
+
+/**
+ * Creates a CSV from a vector of randomly generated `Person` objects.
+ *
+ * # Arguments
+ *
+ * - `path`: The path to the CSV file to create or overwrite
+ * - `header_format`: What style of CSV header names or JSON keys to use.
+ * - `generate_ids`: Whether or not to generate and save unique numeric IDs
+ *                   for each person
+ * - `save_ssns`: Whether or not to save the fake Social Security numbers
+ * - `people`: The list of randomly generated people to save. Note that this
+ *             parameter isn't a reference and is, therefore, consumed by this
+ *             function.
+ *
+ * # Returns
+ *
+ * - `Ok(total)`: The save was successful, and `total` people were written
+ * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
+ */
+fn write_csv(
+    path: &PathBuf,
+    header_format: HeaderFormat,
+    generate_ids: bool,
+    save_ssns: bool,
+    people: Vec<Person>,
+) -> Result<usize, String> {
+
     let mut w = WriterBuilder::new()
         .from_path(path)
         .map_err(|e| format!("Can't write to \"{}\": {}", path_str(path), e))?;
 
-    let (id_header, base_headers, ssn_header) = match header_format {
-        HeaderFormat::SnakeCase => {
-            ("id",
-             ["first_name", "middle_name", "last_name", "gender", "birth_date"],
-             "ssn")
-        },
-        HeaderFormat::CamelCase => {
-           ("id",
-            ["firstName", "middleName", "lastName", "gender", "birthDate"],
-            "ssn")
-        },
-        HeaderFormat::Pretty => {
-            ("ID",
-             ["First Name", "Middle Name", "Last Name", "Gender", "Birth Date"],
-             "SSN")
-        }
-    };
+    let headers = get_headers(header_format);
 
-    let mut header: Vec<&str> = Vec::new();
+    let mut header_rec: Vec<&String> = Vec::new();
 
     if generate_ids {
-        header.push(id_header);
+        header_rec.push(headers.get(HEADER_ID_KEY).unwrap())
     }
 
-    header.extend(base_headers);
+    for h in REQUIRED_HEADERS {
+        header_rec.push(headers.get(h).unwrap())
+    }
 
     if save_ssns {
-        header.push(ssn_header);
+        header_rec.push(headers.get(HEADER_SSN_KEY).unwrap());
     }
 
-    w.write_record(&header).map_err(|e| format!("{}", e))?;
+    w.write_record(&header_rec).map_err(|e| format!("{}", e))?;
 
     for (i, p) in people.iter().enumerate() {
         let id = i + 1;
@@ -218,12 +395,15 @@ pub fn write_people(path: &PathBuf,
             rec.push(&id_str);
         }
 
-        let birth_str = p.birth_date.format("%Y-%m-%d").to_string();
+        let birth_str = date_str(&p.birth_date);
         let gender_str = p.gender.to_str().to_string();
 
         rec.extend([
-            &p.first_name, &p.middle_name, &p.last_name,
-            &gender_str, &birth_str
+            &p.first_name,
+            &p.middle_name,
+            &p.last_name,
+            &gender_str,
+            &birth_str,
         ]);
 
         if save_ssns {
@@ -236,7 +416,108 @@ pub fn write_people(path: &PathBuf,
     Ok(people.len())
 }
 
+/**
+ * Map a `Person` object to a JSON `JsonValue`.
+ *
+ * # Arguments
+ *
+ * - `person`: The `Person` object
+ * - `headers`: A map of the keys to use, from `get_headers()`
+ * - `opt_id`: A `Some` with the generated ID for the user, or `None` for no ID
+ * - `save_ssn`: Whether or not to save the Social Security number
+ *
+ * # Returns
+ *
+ * - `Ok(JsonValue)` if the conversion worked
+ * - `Err(msg)` if it failed
+ */
+fn person_to_json_object(
+    person: &Person,
+    headers: &HashMap<&str, String>,
+    opt_id: Option<usize>,
+    save_ssn: bool,
+) -> Result<JsonValue, String> {
+    let id_key = headers.get(HEADER_ID_KEY).unwrap();
+    let first_name_key = headers.get(HEADER_FIRST_NAME_KEY).unwrap();
+    let middle_name_key = headers.get(HEADER_MIDDLE_NAME_KEY).unwrap();
+    let last_name_key = headers.get(HEADER_LAST_NAME_KEY).unwrap();
+    let gender_key = headers.get(HEADER_GENDER_KEY).unwrap();
+    let birth_date_key = headers.get(HEADER_BIRTH_DATE_KEY).unwrap();
+    let ssn_key = headers.get(HEADER_SSN_KEY).unwrap();
 
+    let mut rec = JsonValue::new_object();
+    let s_id = opt_id.map(|i| i.to_string());
+    let s_gender = person.gender.to_string();
+    let s_date = date_str(&person.birth_date);
+
+    // Have to clone each of the people fields, because the JsonValue
+    // object wants to capture them (and doesn't support &String).
+    let first_name = person.first_name.to_string();
+    let middle_name = person.middle_name.to_string();
+    let last_name = person.last_name.to_string();
+    let ssn = person.ssn.to_string();
+
+    if let Some(s) = s_id {
+        rec.insert(&id_key, s).map_err(|e| format!("{}", e))?;
+    }
+
+    rec.insert(&first_name_key, first_name)
+        .map_err(|e| format!("{}", e))?;
+    rec.insert(&middle_name_key, middle_name)
+        .map_err(|e| format!("{}", e))?;
+    rec.insert(&last_name_key, last_name)
+        .map_err(|e| format!("{}", e))?;
+    rec.insert(&gender_key, s_gender)
+        .map_err(|e| format!("{}", e))?;
+    rec.insert(&birth_date_key, s_date)
+        .map_err(|e| format!("{}", e))?;
+
+    if save_ssn {
+        rec.insert(&ssn_key, ssn).map_err(|e| format!("{}", e))?;
+    }
+
+    Ok(rec)
+}
+
+fn date_str(d: &NaiveDate) -> String {
+    d.format("%Y-%m-%d").to_string()
+}
+
+fn get_headers(header_format: HeaderFormat) -> HashMap<&'static str, String> {
+    let mut m: HashMap<&str, String> = HashMap::new();
+
+    match header_format {
+        HeaderFormat::SnakeCase => {
+            m.insert(HEADER_ID_KEY, String::from("id"));
+            m.insert(HEADER_FIRST_NAME_KEY, String::from("first_name"));
+            m.insert(HEADER_MIDDLE_NAME_KEY, String::from("middle_name"));
+            m.insert(HEADER_LAST_NAME_KEY, String::from("last_name"));
+            m.insert(HEADER_GENDER_KEY, String::from("gender"));
+            m.insert(HEADER_BIRTH_DATE_KEY, String::from("birth_date"));
+            m.insert(HEADER_SSN_KEY, String::from("ssn"));
+        }
+        HeaderFormat::CamelCase => {
+            m.insert(HEADER_ID_KEY, String::from("id"));
+            m.insert(HEADER_FIRST_NAME_KEY, String::from("firstName"));
+            m.insert(HEADER_MIDDLE_NAME_KEY, String::from("middleName"));
+            m.insert(HEADER_LAST_NAME_KEY, String::from("lastName"));
+            m.insert(HEADER_GENDER_KEY, String::from("gender"));
+            m.insert(HEADER_BIRTH_DATE_KEY, String::from("birthDate"));
+            m.insert(HEADER_SSN_KEY, String::from("ssn"));
+        }
+        HeaderFormat::Pretty => {
+            m.insert(HEADER_ID_KEY, String::from("ID"));
+            m.insert(HEADER_FIRST_NAME_KEY, String::from("First Name"));
+            m.insert(HEADER_MIDDLE_NAME_KEY, String::from("Middle Name"));
+            m.insert(HEADER_LAST_NAME_KEY, String::from("Last Name"));
+            m.insert(HEADER_GENDER_KEY, String::from("Gender"));
+            m.insert(HEADER_BIRTH_DATE_KEY, String::from("Birth Date"));
+            m.insert(HEADER_SSN_KEY, String::from("SSN"));
+        }
+    };
+
+    m
+}
 
 /**
  * Generate a fake Social Security number. These numbers are guaranteed to
@@ -278,13 +559,14 @@ fn make_ssn(ssn_prefixes: &Vec<u32>) -> String {
  *
  * The generated `Person`.
  */
-fn make_person(first_names: &Vec<String>,
-               last_names: &Vec<String>,
-               gender: Gender,
-               epoch_start: i64,
-               epoch_end: i64,
-               ssn_prefixes: &Vec<u32>) -> Person {
-
+fn make_person(
+    first_names: &Vec<String>,
+    last_names: &Vec<String>,
+    gender: Gender,
+    epoch_start: i64,
+    epoch_end: i64,
+    ssn_prefixes: &Vec<u32>,
+) -> Person {
     let first_index = rand::thread_rng().gen_range(0..first_names.len());
     let mid_index = rand::thread_rng().gen_range(0..first_names.len());
     let last_index = rand::thread_rng().gen_range(0..last_names.len());
@@ -297,6 +579,6 @@ fn make_person(first_names: &Vec<String>,
         last_name: String::from(&last_names[last_index]),
         gender: gender,
         birth_date: birth_date,
-        ssn: make_ssn(ssn_prefixes)
+        ssn: make_ssn(ssn_prefixes),
     }
 }

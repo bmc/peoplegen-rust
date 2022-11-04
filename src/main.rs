@@ -58,6 +58,7 @@ fn run(args: Arguments) -> Result<(), String> {
         );
         let total <- write_people(
             &args.output_file,
+            args.output_format,
             args.header_format,
             args.generate_ids,
             args.generate_ssns,
