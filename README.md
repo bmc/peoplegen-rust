@@ -29,7 +29,7 @@ However, do _not_ expect me to maintain this tool rigorously. It's a playground
 for me, as well as something I use occasionally. That's all.
 
 ----
-jjj
+
 ## Installation
 
 Clone this repo in the usual way. Ensure that you have a suitable, up-to-date
