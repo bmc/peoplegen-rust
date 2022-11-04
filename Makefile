@@ -12,7 +12,7 @@ clean:
 	cargo clean
 
 docs:
-	cargo doc
+	cargo doc --no-deps --workspace
 
 install: release docs
 	mkdir -p $(BASE_DIR)/bin
