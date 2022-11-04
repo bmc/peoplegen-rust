@@ -78,7 +78,7 @@ is _not_ pretty-printed):
 ]}
 ```
 
-* `jsonl`
+**`jsonl`**
 
 Creates a [JSON Lines](https://jsonlines.org/) file from a vector of randomly
 generated `Person` objects. JSON Lines is a line-by-line JSON format, where
