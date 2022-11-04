@@ -222,10 +222,11 @@ pub fn write_people(
 // ----------------------------------------------------------------------------
 
 /**
- * Creates a JSONL file from a vector of randomly generated `Person` objects.
- * JSONL is a line-by-line JSON format, where each object occupies a line, and
- * there's no enclosing object or array. For instance:
-  *
+ * Creates a JSON Lines file from a vector of randomly generated `Person`
+ * objects. JSON Lines is a line-by-line JSON format, where each object
+ * occupies its own text line, and there's no enclosing object or array. For
+ * instance:
+ *
  * ```
  * { "first_name": "Moe", ... },
  * { "first_name": "Larry", ... },
@@ -234,7 +235,8 @@ pub fn write_people(
  * ```
  *
  * JSON files of this form are well-suited for ingesting into distributed
- * systems such as Apache Spark.
+ * systems such as Apache Spark, for processing with line-based Unix tools,
+ * etc.
  *
  * # Arguments
  *
@@ -283,7 +285,7 @@ fn write_jsonl(
  * The JSON output is of this form (though _not_ pretty-printed):
  *
  * ```
- * {"people" [
+ * {"people": [
  *   { "first_name": "Moe", ... },
  *   { "first_name": "Larry", ... },
  *   { "first_name": "Curly", ... },

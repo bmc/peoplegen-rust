@@ -121,7 +121,7 @@ specified, defaults to the value of environment variable
                  .short('s')
                  .long("ssn")
                  .action(ArgAction::SetTrue)
-                 .help("Generate fake Social Security numbers"))
+                 .help("Generate fake (and invalid) Social Security numbers"))
         .arg(Arg::new("id")
                  .short('i')
                  .long("id")
