@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use clap::{Command, Arg, ArgAction};
 use chrono::{Duration, Utc, Datelike};
-use crate::numlib::parse_int;
+//use crate::numlib::parse_int;
 
 const STARTING_YEAR_DEFAULT_DELTA: u32 = 90;
 const ENDING_YEAR_DEFAULT_DELTA: u32 = 18;
@@ -15,7 +15,7 @@ const ENV_LAST_NAMES_FILE: &str = "PEOPLEGEN_LAST_NAMES";
 pub enum HeaderFormat {
     SnakeCase,
     CamelCase,
-    HumanReadable
+    Pretty
 }
 
 // Command-line arguments, as parsed.
@@ -31,7 +31,8 @@ pub struct Arguments {
     pub verbose: bool,
     pub first_names_file: PathBuf,
     pub last_names_file: PathBuf,
-    pub output_file: PathBuf
+    pub output_file: PathBuf,
+    pub total: u32
 }
 
 /// Parse the command line arguments into an `Arguments` structure.
@@ -40,7 +41,7 @@ pub struct Arguments {
 pub fn parse_args() -> Result<Arguments, String> {
     let header_format_map: HashMap<&str, HeaderFormat> = HashMap::from([
         ("snake", HeaderFormat::SnakeCase),
-        ("nice", HeaderFormat::HumanReadable),
+        ("pretty", HeaderFormat::Pretty),
         ("camel", HeaderFormat::CamelCase),
     ]);
     // See https://stackoverflow.com/a/56724224/53495
@@ -67,22 +68,26 @@ pub fn parse_args() -> Result<Arguments, String> {
                  .long("female")
                  .default_value("50")
                  .value_name("PERCENT")
+                 .value_parser(clap::value_parser!(u32))
                  .help("Percentage of female names."))
         .arg(Arg::new("male")
                  .short('m')
                  .long("male")
                  .default_value("50")
                  .value_name("PERCENT")
+                 .value_parser(clap::value_parser!(u32))
                  .help("Percentage of male names."))
         .arg(Arg::new("first-names")
                  .short('F')
                  .long("first-names")
-                 .value_name("PATH")
+                 .value_name("<path>")
                  .help(format!(
 "Path to CSV file containing first names and genders. The first
 column must be the name, and the second is the gender (currently
-'F' or 'M'). The file is assumed NOT to have a header. If not specified,
-defaults to the value of environment variable {}.", ENV_FIRST_NAMES_FILE)))
+'F' or 'M'). The file is assumed NOT to have a header. If not
+specified, it defaults to the value of environment variable
+{}.",
+                      ENV_FIRST_NAMES_FILE)))
         .arg(Arg::new("last-names")
                  .short('L')
                  .long("last-names")
@@ -127,24 +132,29 @@ specified, defaults to the value of environment variable
         .arg(Arg::new("output")
                  .required(true)
                  .value_name("OUTPUT_FILE")
-                 .help("Path to output file"));
+                 .help("Path to output file"))
+        .arg(Arg::new("total")
+                 .required(true)
+                 .value_name("TOTAL")
+                 .value_parser(clap::value_parser!(u32))
+                 .help("How many people to generate"));
 
     let matches = parser.get_matches();
 
     // NOTE: It's okay to use unwrap() rather than unwrap_or() on arguments
     // with a default, because they'll never come back as None.
     let female_percent = matches
-        .get_one::<String>("female")
-        .map(|s| parse_int(s))
-        .unwrap()?;
-    let male_percent = matches
-        .get_one::<String>("male")
-        .map(|s| parse_int(s))
-        .unwrap()?;
-    let year_min = matches
-        .get_one::<u32>("year-min")
         // In this case, get_one() actually returns a reference to a u32.
         // We can use map() to dereference it.
+        .get_one::<u32>("female")
+        .map(|reference| *reference)
+        .unwrap();
+    let male_percent = matches
+        .get_one::<u32>("male")
+        .map(|reference| *reference)
+        .unwrap();
+    let year_min = matches
+        .get_one::<u32>("year-min")
         .map(|reference| *reference)
         .unwrap_or_else(|| year_before_now(ENDING_YEAR_DEFAULT_DELTA));
     let year_max = matches
@@ -160,11 +170,15 @@ specified, defaults to the value of environment variable
         .map(PathBuf::from)
         .unwrap();
     let first_names_file = matches
-         .get_one::<String>("first-names")
-         .unwrap_or(&first_names_default);
+        .get_one::<String>("first-names")
+        .unwrap_or(&first_names_default);
     let last_names_file = matches
-         .get_one::<String>("last-names")
-         .unwrap_or(&last_names_default);
+        .get_one::<String>("last-names")
+        .unwrap_or(&last_names_default);
+    let total = matches
+        .get_one::<u32>("total")
+        .map(|reference| *reference)
+        .unwrap();
 
     validate(Arguments {
         female_percent,
@@ -177,7 +191,8 @@ specified, defaults to the value of environment variable
         first_names_file: PathBuf::from(first_names_file),
         last_names_file: PathBuf::from(last_names_file),
         verbose: *matches.get_one::<bool>("verbose").unwrap(),
-        output_file: output_file
+        output_file: output_file,
+        total
     })
 }
 
