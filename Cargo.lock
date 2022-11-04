@@ -112,6 +112,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "comp"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7b6cae29f71a26f0dae0e291da438d6fced0e22e78aa1484cbbc085b5170949"
+
+[[package]]
 name = "core-foundation-sys"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -315,6 +321,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "clap",
+ "comp",
  "csv",
  "rand",
  "tailcall",

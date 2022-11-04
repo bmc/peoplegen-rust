@@ -3,6 +3,10 @@ use std::path::PathBuf;
 use csv::WriterBuilder;
 use crate::args::{Arguments, HeaderFormat, parse_args};
 use crate::people::{Person, read_names_file, make_people};
+use crate::path::path_str;
+
+#[macro_use]
+extern crate comp;
 
 pub mod numlib;
 pub mod args;
@@ -21,38 +25,22 @@ fn main() {
 }
 
 fn run(args: Arguments) -> Result<(), String> {
-    read_names_file(&args.male_first_names_file)
-
-    .and_then(|male_first_names| {
-        read_names_file(&args.female_first_names_file)
-            .map(|female_first_names| (female_first_names, male_first_names))
-    })
-
-    .and_then(|(female_first_names, male_first_names)| {
-        read_names_file(&args.last_names_file)
-            .map(|last_names| (female_first_names, male_first_names, last_names))
-    })
-
-    .and_then(|(female_first_names, male_first_names, last_names)| {
-      let people = make_people(
-          &args,
-          &male_first_names,
-          &female_first_names,
-          &last_names
-      );
-      Ok(people)
-    })
-
-    .and_then(|people| {
-      assert!(people.len() == (args.total as usize));
-      write_people(&args.output_file, &args, &people)
-    })
-
-    .and_then(|total| {
+    result! {
+        // The macro requires <- for "assignments" that return Result.
+        let male_first_names <- read_names_file(&args.male_first_names_file);
+        let female_first_names <- read_names_file(&args.female_first_names_file);
+        let last_names <- read_names_file(&args.last_names_file);
+        let people = make_people(
+            &args,
+            &male_first_names,
+            &female_first_names,
+            &last_names
+        );
+        let total <- write_people(&args.output_file, &args, &people);
         println!("Wrote {} records(s) to \"{}\".",
                  total, args.output_file.display());
-        Ok(())
-    })
+        ()
+    }
 }
 
 fn write_people(path: &PathBuf,
@@ -60,7 +48,7 @@ fn write_people(path: &PathBuf,
                 people: &Vec<Person>) -> Result<usize, String> {
     let mut w = WriterBuilder::new()
         .from_path(path)
-        .map_err(|e| format!("{}", e))?;
+        .map_err(|e| format!("Can't write to \"{}\": {}", path_str(path), e))?;
 
     let (id_header, base_headers, ssn_header) = match args.header_format {
         HeaderFormat::SnakeCase => {
