@@ -14,6 +14,7 @@ clap = "4.0.18"
 tailcall = "0.1.6"
 chrono = "0.4"
 csv = "1.1.6"
+json = "0.12"
 funty = "2.0"
 # See https://docs.rs/comp/latest/comp/
 # Enables a comprehension-like syntax for Result, Option, Iterator, etc.
