@@ -1,11 +1,20 @@
+/**
+ * Contains the definition of a generation person, plus functions to:
+ *
+ * - read people-related data from files
+ * - randomly generate `Person` objects
+ * - serialize generated data to CSV
+ */
+
 use std::fs::File;
 use std::path::PathBuf;
 use std::io::{self, prelude::*};
 use chrono::naive::{NaiveDate, NaiveDateTime};
 use rand::Rng;
 use rand::seq::SliceRandom;
+use csv::WriterBuilder;
 use crate::path::path_str;
-use crate::args::Arguments;
+use crate::args::{Arguments, HeaderFormat};
 
 /**
  * Abstract representation of gender. Too restrictive currently, but it
@@ -140,6 +149,107 @@ pub fn make_people(args: &Arguments,
     buf
 }
 
+
+/**
+ * Creates a CSV file from a vector of randomly generated `Person` objects.
+ *
+ * # Arguments
+ *
+ * - `path`: The path to the CSV file to create or overwrite
+ * - `header_format`: What style of CSV header names to use
+ * - `generate_ids`: Whether or not to generate and save unique numeric IDs
+ *                   for each person
+ * - `save_ssns`: Whether or not to save the fake Social Security numbers
+ * - `people`: The list of randomly generated people to save
+ *
+ * # Returns
+ *
+ * - `Ok(total)`: The save was successful, and `total` people were written
+ * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
+ */
+pub fn write_people(path: &PathBuf,
+                    header_format: HeaderFormat,
+                    generate_ids: bool,
+                    save_ssns: bool,
+                    people: &Vec<Person>) -> Result<usize, String> {
+    let mut w = WriterBuilder::new()
+        .from_path(path)
+        .map_err(|e| format!("Can't write to \"{}\": {}", path_str(path), e))?;
+
+    let (id_header, base_headers, ssn_header) = match header_format {
+        HeaderFormat::SnakeCase => {
+            ("id",
+             ["first_name", "middle_name", "last_name", "gender", "birth_date"],
+             "ssn")
+        },
+        HeaderFormat::CamelCase => {
+           ("id",
+            ["firstName", "middleName", "lastName", "gender", "birthDate"],
+            "ssn")
+        },
+        HeaderFormat::Pretty => {
+            ("ID",
+             ["First Name", "Middle Name", "Last Name", "Gender", "Birth Date"],
+             "SSN")
+        }
+    };
+
+    let mut header: Vec<&str> = Vec::new();
+
+    if generate_ids {
+        header.push(id_header);
+    }
+
+    header.extend(base_headers);
+
+    if save_ssns {
+        header.push(ssn_header);
+    }
+
+    w.write_record(&header).map_err(|e| format!("{}", e))?;
+
+    for (i, p) in people.iter().enumerate() {
+        let id = i + 1;
+        let id_str = id.to_string();
+        let mut rec: Vec<&String> = Vec::new();
+
+        if generate_ids {
+            rec.push(&id_str);
+        }
+
+        let birth_str = p.birth_date.format("%Y-%m-%d").to_string();
+        let gender_str = p.gender.to_str().to_string();
+
+        rec.extend([
+            &p.first_name, &p.middle_name, &p.last_name,
+            &gender_str, &birth_str
+        ]);
+
+        if save_ssns {
+            rec.push(&p.ssn);
+        }
+
+        w.write_record(&rec).map_err(|e| format!("{}", e))?;
+    }
+
+    Ok(people.len())
+}
+
+
+
+/**
+ * Generate a fake Social Security number. These numbers are guaranteed to
+ * be unused.
+ *
+ * # Arguments
+ *
+ * - `ssn_prefixes`: The set of known unused Social Security prefixes (the
+ *                   first three numbers of an SSN).
+ *
+ * # Returns
+ *
+ * The generated Social Security number.
+ */
 fn make_ssn(ssn_prefixes: &Vec<u32>) -> String {
     let mut rng = rand::thread_rng();
     let first_index = rng.gen_range(0..ssn_prefixes.len());
@@ -150,6 +260,23 @@ fn make_ssn(ssn_prefixes: &Vec<u32>) -> String {
     format!("{}-{}-{}", first, second, third)
 }
 
+/**
+ * Randomly generate a single `Person`.
+ *
+ * # Arguments
+ *
+ * - `first_names`: The first names from which to choose a random first name
+ * - `last_names`: The last names from which to choose a random last name
+ * - `gender`: The assigned gender
+ * - `epoch_start`: The starting year for birth dates, as a Unix timestamp
+ * - `epoch_end`: The ending year for birth dates, as a Unix timestamp
+ * - `ssn_prefixes`: The set of known unused Social Security prefixes (the
+ *                   first three numbers of an SSN).
+ *
+ * # Returns
+ *
+ * The generated `Person`.
+ */
 fn make_person(first_names: &Vec<String>,
                last_names: &Vec<String>,
                gender: Gender,
