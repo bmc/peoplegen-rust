@@ -1,10 +1,9 @@
-/**
- * Contains the definition of a generation person, plus functions to:
- *
- * - read people-related data from files
- * - randomly generate `Person` objects
- * - serialize generated data to CSV
- */
+//!
+//! Contains the definition of a generated person, plus functions to:
+//!
+//! - read people-related data from files
+//! - randomly generate `Person` objects
+//! - serialize generated data to CSV
 
 use std::fs::File;
 use std::path::PathBuf;

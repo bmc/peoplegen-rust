@@ -1,3 +1,5 @@
+//! All things command-line for `peoplegen`, including the argument parser.
+
 use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::collections::HashMap;

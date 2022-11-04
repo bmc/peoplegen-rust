@@ -1,3 +1,5 @@
+//! Main program (and the crate root).
+//!
 use std::process;
 use crate::args::{Arguments, parse_args};
 use crate::people::{read_names_file, make_people, write_people};
@@ -11,6 +13,9 @@ pub mod people;
 pub mod path;
 pub mod env;
 
+/**
+ * Main program.
+ */
 fn main() {
     let res = result! {
         let args <- parse_args();

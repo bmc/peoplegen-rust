@@ -1,6 +1,4 @@
-/**
- * Environment-related stuff.
- */
+//! Environment variable-related helpers.
 
 use std::env;
 

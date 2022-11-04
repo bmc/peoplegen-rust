@@ -1,3 +1,5 @@
+//! Some path-related helpers.
+
 use std::path::PathBuf;
 
 /**
