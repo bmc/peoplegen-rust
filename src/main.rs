@@ -61,7 +61,7 @@ fn run(args: Arguments) -> Result<(), String> {
             args.header_format,
             args.generate_ids,
             args.generate_ssns,
-            &people
+            people
         );
         println!("Wrote {} records(s) to \"{}\".",
                  total, args.output_file.display());

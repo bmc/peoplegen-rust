@@ -159,7 +159,9 @@ pub fn make_people(args: &Arguments,
  * - `generate_ids`: Whether or not to generate and save unique numeric IDs
  *                   for each person
  * - `save_ssns`: Whether or not to save the fake Social Security numbers
- * - `people`: The list of randomly generated people to save
+ * - `people`: The list of randomly generated people to save. Note that this
+ *             parameter isn't a reference and is, therefore, consumed by this
+ *             function.
  *
  * # Returns
  *
@@ -170,7 +172,7 @@ pub fn write_people(path: &PathBuf,
                     header_format: HeaderFormat,
                     generate_ids: bool,
                     save_ssns: bool,
-                    people: &Vec<Person>) -> Result<usize, String> {
+                    people: Vec<Person>) -> Result<usize, String> {
     let mut w = WriterBuilder::new()
         .from_path(path)
         .map_err(|e| format!("Can't write to \"{}\": {}", path_str(path), e))?;
