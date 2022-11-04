@@ -6,6 +6,12 @@ States Census Bureau data that's captured in local files. By default, it
 splits the generated names so that half are female and half are male,
 but that can be changed via command line options.
 
+(Yes, I know there are more than two genders. I support that distinction.
+The Census Bureau data files I'm using are from 2010, and they only supported
+two genders. For now, this program is consistent with that restriction, though
+I'm considering ways to expand it to generate data that's more reflective of
+gender reality.)
+
 This is a Rust version of the original Scala
 [peoplegen](https://github.com/bmc/peoplegen) tool I built awhile ago. I
 made this Rust version as part of my "learning Rust" journey.
