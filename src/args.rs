@@ -169,11 +169,11 @@ specified, defaults to the value of environment variable
     let year_min = matches
         .get_one::<u32>("year-min")
         .map(|reference| *reference)
-        .unwrap_or_else(|| year_before_now(ENDING_YEAR_DEFAULT_DELTA));
+        .unwrap_or_else(|| year_before_now(STARTING_YEAR_DEFAULT_DELTA));
     let year_max = matches
         .get_one::<u32>("year-max")
         .map(|reference| *reference)
-        .unwrap_or_else(|| year_before_now(STARTING_YEAR_DEFAULT_DELTA));
+        .unwrap_or_else(|| year_before_now(ENDING_YEAR_DEFAULT_DELTA));
     let header_format = matches
         .get_one::<String>("header-format")
         .map(|s| parse_header_format(s))
