@@ -21,17 +21,17 @@ pub enum HeaderFormat {
 // Command-line arguments, as parsed.
 #[derive(Debug)]
 pub struct Arguments {
-    female_percent: u32,
-    male_percent: u32,
-    generate_ssns: bool,
-    generate_ids: bool,
-    header_format: HeaderFormat,
-    year_min: u32,
-    year_max: u32,
-    verbose: bool,
-    first_names_file: PathBuf,
-    last_names_file: PathBuf,
-    output_file: PathBuf
+    pub female_percent: u32,
+    pub male_percent: u32,
+    pub generate_ssns: bool,
+    pub generate_ids: bool,
+    pub header_format: HeaderFormat,
+    pub year_min: u32,
+    pub year_max: u32,
+    pub verbose: bool,
+    pub first_names_file: PathBuf,
+    pub last_names_file: PathBuf,
+    pub output_file: PathBuf
 }
 
 /// Parse the command line arguments into an `Arguments` structure.
