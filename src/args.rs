@@ -1,10 +1,10 @@
 use std::ffi::OsStr;
-use std::env;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use clap::{Command, Arg, ArgAction};
 use chrono::{Duration, Utc, Datelike};
-//use crate::numlib::parse_int;
+use crate::path::path_is_empty;
+use crate::env::getenv;
 
 const STARTING_YEAR_DEFAULT_DELTA: u32 = 90;
 const ENDING_YEAR_DEFAULT_DELTA: u32 = 18;
@@ -12,6 +12,7 @@ const ENV_MALE_FIRST_NAMES_FILE: &str = "PEOPLEGEN_MALE_FIRST_NAMES";
 const ENV_FEMALE_FIRST_NAMES_FILE: &str = "PEOPLEGEN_FEMALE_FIRST_NAMES";
 const ENV_LAST_NAMES_FILE: &str = "PEOPLEGEN_LAST_NAMES";
 
+/// The header format to use in the output CSV file.
 #[derive(Debug, Copy, Clone)]
 pub enum HeaderFormat {
     SnakeCase,
@@ -19,7 +20,7 @@ pub enum HeaderFormat {
     Pretty
 }
 
-// Command-line arguments, as parsed.
+/// Command-line arguments, as parsed.
 #[derive(Debug)]
 pub struct Arguments {
     pub female_percent: u32,
@@ -37,9 +38,11 @@ pub struct Arguments {
     pub total: u32
 }
 
-/// Parse the command line arguments into an `Arguments` structure.
-/// Returns an `Ok` with the parsed arguments, or an `Err` with a message
-/// on error.
+/**
+ * Parse the command line arguments into an `Arguments` structure.
+ * Returns an `Ok` with the parsed arguments, or an `Err` with a message
+ * on error.
+*/
 pub fn parse_args() -> Result<Arguments, String> {
     let header_format_map: HashMap<&str, HeaderFormat> = HashMap::from([
         ("snake", HeaderFormat::SnakeCase),
@@ -208,25 +211,11 @@ specified, defaults to the value of environment variable
     })
 }
 
-fn getenv(s: &str) -> String {
-    // match env::var_os(s) {
-    //     Some(v) => v.into_string().unwrap(),
-    //     None => String::new()
-    // }
-
-    env::var_os(s)
-        .map(|v| v.into_string().unwrap())
-        .unwrap_or_else(|| String::new())
-}
-
+/// Given the current date, return the year `years` ago.
 fn year_before_now(years: u32) -> u32 {
     // There's no Duration::years(), so just use weeks and multiply.
     let y = years as i64;
     (Utc::now() - Duration::weeks(y * 52)).year() as u32
-}
-
-fn path_is_empty(p: &PathBuf) -> bool {
-    p.as_path().as_os_str() == ""
 }
 
 /// Cross-validate the parsed arguments.

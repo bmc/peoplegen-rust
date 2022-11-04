@@ -7,6 +7,10 @@ use rand::seq::SliceRandom;
 use crate::path::path_str;
 use crate::args::Arguments;
 
+/**
+ * Abstract representation of gender. Too restrictive currently, but it
+ * matches the gender definitions in the 2010 Census Bureau data.
+*/
 #[derive(PartialEq)]
 pub enum Gender {
     Male,
@@ -14,6 +18,10 @@ pub enum Gender {
 }
 
 impl Gender {
+    /**
+        Converts a `Gender` value to a string suitable for display or for
+        writing to a CSV file.
+    */
     pub fn to_str(&self) -> &str {
         if *self == Gender::Male {
             "M"
@@ -24,6 +32,18 @@ impl Gender {
     }
 }
 
+/**
+ * Represents a generated person.
+ *
+ * # Fields
+ *
+ * - `first_name`: The person's first name (gender-specific)
+ * - `middle_name`: The person's middle name (gender-specific)
+ * - `last_name`: The person's last name
+ * - `gender`: The gender
+ * - `birth_date`: The person's birth date
+ * - `ssn`: The person's (fake) U.S. Social Security Number
+*/
 pub struct Person {
     pub first_name: String,
     pub middle_name: String,
@@ -33,6 +53,50 @@ pub struct Person {
     pub ssn: String
 }
 
+/**
+  * Read a file of names into a vector of strings.
+  *
+  * # Arguments
+  *
+  * - path: The path to the file to be read
+  *
+  * # Returns
+  *
+  * - `Ok(v)`: The file was successfully read into vector `v`
+  * - `Err(msg)`: The file could not be read, and `msg` explains why
+*/
+pub fn read_names_file(path: &PathBuf) -> Result<Vec<String>, String> {
+    let file = File::open(path)
+        .map_err(|e| format!("\"{}\": {}", path_str(path), e))?;
+    let reader = io::BufReader::new(file);
+    let mut buf: Vec<String> = Vec::new();
+
+    for line_res in reader.lines() {
+        let line = line_res.map_err(|e| format!("{}", e))?;
+        buf.push(line);
+    }
+
+    Ok(buf)
+}
+
+/**
+ * Generate the fake people, based on the command-line settings. Note that
+ * fake Social Security numbers are always generated, regardless of the
+ * setting of `args.generate_ssns`. They should be suppressed at write-time,
+ * if desired.
+ *
+ * # Arguments
+ *
+ * - `args`: The parsed command-line arguments. The number of people generated
+ * is taken from `args.total`.
+ * - `male_first_names`: The list of male first names
+ * - `female_first_names`: The list of female first names
+ * - `last_names`: The list of last names
+ *
+ * # Returns
+ *
+ * A vector containing the randomly generated `Person` objects.
+ */
 pub fn make_people(args: &Arguments,
                    male_first_names: &Vec<String>,
                    female_first_names: &Vec<String>,
@@ -107,18 +171,4 @@ fn make_person(first_names: &Vec<String>,
         birth_date: birth_date,
         ssn: make_ssn(ssn_prefixes)
     }
-}
-
-pub fn read_names_file(path: &PathBuf) -> Result<Vec<String>, String> {
-    let file = File::open(path)
-      .map_err(|e| format!("\"{}\": {}", path_str(path), e))?;
-    let reader = io::BufReader::new(file);
-    let mut buf: Vec<String> = Vec::new();
-
-    for line_res in reader.lines() {
-        let line = line_res.map_err(|e| format!("{}", e))?;
-        buf.push(line);
-    }
-
-    Ok(buf)
 }

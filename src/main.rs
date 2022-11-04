@@ -12,6 +12,7 @@ pub mod numlib;
 pub mod args;
 pub mod people;
 pub mod path;
+pub mod env;
 
 fn main() {
     let res = result! {
@@ -28,6 +29,19 @@ fn main() {
     }
 }
 
+/**
+ * `run` implements the main logic of the program, once command-line arguments
+ * have been parsed.
+ *
+ * # Arguments
+ *
+ * - `args`: The parsed command-line arguments
+ *
+ * # Returns
+ *
+ * - `Ok(())`: Everything worked. No result.
+ * - `Err(msg)`: Something failed, and `msg` explains the error.
+ */
 fn run(args: Arguments) -> Result<(), String> {
     result! {
         // The macro requires <- for "assignments" that return Result.
@@ -53,9 +67,26 @@ fn run(args: Arguments) -> Result<(), String> {
     }
 }
 
+/**
+ * Creates a CSV file from a vector of randomly generated `Person` objects.
+ *
+ * # Arguments
+ *
+ * - `path`: The path to the CSV file to create or overwrite
+ * - `header_format`: What style of CSV header names to use
+ * - `generate_ids`: Whether or not to generate and save unique numeric IDs
+ *                   for each person
+ * - `save_ssns`: Whether or not to save the fake Social Security numbers
+ * - `people`: The list of randomly generated people to save
+ *
+ * # Returns
+ *
+ * - `Ok(total)`: The save was successful, and `total` people were written
+ * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
+ */
 fn write_people(path: &PathBuf,
                 header_format: HeaderFormat,
-                save_ids: bool,
+                generate_ids: bool,
                 save_ssns: bool,
                 people: &Vec<Person>) -> Result<usize, String> {
     let mut w = WriterBuilder::new()
@@ -82,7 +113,7 @@ fn write_people(path: &PathBuf,
 
     let mut header: Vec<&str> = Vec::new();
 
-    if save_ids {
+    if generate_ids {
         header.push(id_header);
     }
 
@@ -97,7 +128,7 @@ fn write_people(path: &PathBuf,
         let id = i + 1;
         let id_str = id.to_string();
         let mut rec: Vec<&String> = Vec::new();
-        if save_ids {
+        if generate_ids {
             rec.push(&id_str);
         }
         let birth_str = p.birth_date.format("%Y-%m-%d").to_string();
