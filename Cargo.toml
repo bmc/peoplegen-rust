@@ -11,7 +11,7 @@ rand = "0.8.3"
 clap = "4.0.18"
 # Tailcall transforms functions to tail-recursive ones.
 # https://crates.io/crates/tailcall
-tailcall = "0.1.6"
+#tailcall = "0.1.6"
 chrono = "0.4"
 csv = "1.1.6"
 json = "0.12"
