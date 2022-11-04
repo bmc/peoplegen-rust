@@ -2,7 +2,7 @@ use std::process;
 use std::path::PathBuf;
 use csv::WriterBuilder;
 use crate::args::{Arguments, HeaderFormat, parse_args};
-use crate::people::{Person, read_first_names, read_last_names, make_people};
+use crate::people::{Person, read_names_file, make_people};
 
 pub mod numlib;
 pub mod args;
@@ -21,15 +21,19 @@ fn main() {
 }
 
 fn run(args: Arguments) -> Result<(), String> {
-    read_first_names(&args.first_names_file)
+    read_names_file(&args.male_first_names_file)
 
-    .and_then(|(female_first_names, male_first_names)| {
-      read_last_names(&args.last_names_file)
-        .map(|last_names| (female_first_names, male_first_names, last_names))
+    .and_then(|(male_first_names)| {
+        read_names_file(&args.female_first_names_file)
+            .map(|female_first_names| (female_first_names, male_first_names))
     })
 
-    .and_then(|t| {
-      let (female_first_names, male_first_names, last_names) = t;
+    .and_then(|(female_first_names, male_first_names)| {
+        read_names_file(&args.last_names_file)
+            .map(|last_names| (female_first_names, male_first_names, last_names))
+    })
+
+    .and_then(|(female_first_names, male_first_names, last_names)| {
       let people = make_people(
           &args,
           &male_first_names,

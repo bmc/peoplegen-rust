@@ -111,7 +111,7 @@ fn make_person(first_names: &Vec<String>,
     }
 }
 
-pub fn read_last_names(path: &PathBuf) -> Result<Vec<String>, String> {
+pub fn read_names_file(path: &PathBuf) -> Result<Vec<String>, String> {
     let file = File::open(path)
       .map_err(|e| format!("\"{}\": {}", path_str(path), e))?;
     let reader = io::BufReader::new(file);
@@ -123,51 +123,4 @@ pub fn read_last_names(path: &PathBuf) -> Result<Vec<String>, String> {
     }
 
     Ok(buf)
-}
-
-pub fn read_first_names(path: &PathBuf) -> Result<(Vec<String>, Vec<String>), String> {
-    #[tailcall]
-    fn load_next(mut it: StringRecordsIter<File>,
-                 path: &PathBuf,
-                 line_num: u32,
-                 mut f_buf: Vec<String>,
-                 mut m_buf: Vec<String>) -> Result<(Vec<String>, Vec<String>), String> {
-        match it.next() {
-            Some(Err(e)) => Err(format!("{}", e)),
-            Some(Ok(v)) if v.len() != 2 => {
-                Err(format!("\"{}\", line {}: Expected 2 fields, not {}",
-                            path_str(&path), line_num, v.len()))
-            },
-            Some(Ok(v)) if (v[0].trim() == "") || (v[1].trim() == "") => {
-                Err(format!(
-                    "\"{}\", line {}: Unexpected empty field(s)",
-                    path_str(path), line_num
-                ))
-            },
-            Some(Ok(v)) if v[1].to_lowercase() == "f" => {
-                f_buf.push(v[0].to_string());
-                load_next(it, path, line_num + 1, f_buf, m_buf)
-            },
-            Some(Ok(v)) if v[1].to_lowercase() == "m" => {
-                m_buf.push(v[0].to_string());
-                load_next(it, path, line_num + 1, f_buf, m_buf)
-            },
-            Some(Ok(v)) => Err(format!(
-                "\"{}\", line {}: Unknown gender: {}",
-                path_str(path), line_num, v[1].to_string()
-            )),
-            None => Ok((f_buf, m_buf))
-        }
-    }
-
-    let mut r = ReaderBuilder::new()
-        .has_headers(false)
-        .from_path(path)
-        .map_err(|e| format!("\"{}\": {}", path_str(path), e))?;
-
-    let f_buf: Vec<String> = Vec::new();
-    let m_buf: Vec<String> = Vec::new();
-    let it = r.records();
-
-    load_next(it, path, 1, f_buf, m_buf)
 }

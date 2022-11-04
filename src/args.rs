@@ -8,7 +8,8 @@ use chrono::{Duration, Utc, Datelike};
 
 const STARTING_YEAR_DEFAULT_DELTA: u32 = 90;
 const ENDING_YEAR_DEFAULT_DELTA: u32 = 18;
-const ENV_FIRST_NAMES_FILE: &str = "PEOPLEGEN_FIRST_NAMES";
+const ENV_MALE_FIRST_NAMES_FILE: &str = "PEOPLEGEN_MALE_FIRST_NAMES";
+const ENV_FEMALE_FIRST_NAMES_FILE: &str = "PEOPLEGEN_FEMALE_FIRST_NAMES";
 const ENV_LAST_NAMES_FILE: &str = "PEOPLEGEN_LAST_NAMES";
 
 #[derive(Debug, Copy, Clone)]
@@ -29,7 +30,8 @@ pub struct Arguments {
     pub year_min: u32,
     pub year_max: u32,
     pub verbose: bool,
-    pub first_names_file: PathBuf,
+    pub male_first_names_file: PathBuf,
+    pub female_first_names_file: PathBuf,
     pub last_names_file: PathBuf,
     pub output_file: PathBuf,
     pub total: u32
@@ -56,7 +58,8 @@ pub fn parse_args() -> Result<Arguments, String> {
 
     let default_year_min = year_before_now(STARTING_YEAR_DEFAULT_DELTA);
     let default_year_max = year_before_now(ENDING_YEAR_DEFAULT_DELTA);
-    let first_names_default = getenv(ENV_FIRST_NAMES_FILE);
+    let female_first_names_default = getenv(ENV_FEMALE_FIRST_NAMES_FILE);
+    let male_first_names_default = getenv(ENV_MALE_FIRST_NAMES_FILE);
     let last_names_default = getenv(ENV_LAST_NAMES_FILE);
 
     let parser = Command::new("peoplegen")
@@ -65,30 +68,35 @@ pub fn parse_args() -> Result<Arguments, String> {
         .about("Generate fake people data in a CSV")
         .arg(Arg::new("female")
                  .short('f')
-                 .long("female")
+                 .long("female-pct")
                  .default_value("50")
                  .value_name("PERCENT")
                  .value_parser(clap::value_parser!(u32))
                  .help("Percentage of female names."))
         .arg(Arg::new("male")
                  .short('m')
-                 .long("male")
+                 .long("male-pct")
                  .default_value("50")
                  .value_name("PERCENT")
                  .value_parser(clap::value_parser!(u32))
                  .help("Percentage of male names."))
-        .arg(Arg::new("first-names")
+        .arg(Arg::new("female-first-names")
                  .short('F')
-                 .long("first-names")
+                 .long("female-names")
                  .value_name("<path>")
                  .help(format!(
-"Path to CSV file containing first names and genders. The first
-column must be the name, and the second is the gender (currently
-'F' or 'M'). The file is assumed NOT to have a header. If not
-specified, it defaults to the value of environment variable
-{}.",
-                      ENV_FIRST_NAMES_FILE)))
-        .arg(Arg::new("last-names")
+"Path to text file containing female first names, one per line.
+If not specified, it defaults to the value of environment variable
+{}.", ENV_FEMALE_FIRST_NAMES_FILE)))
+        .arg(Arg::new("male-first-names")
+                 .short('M')
+                 .long("male-names")
+                 .value_name("<path>")
+                 .help(format!(
+"Path to text file containing male first names, one per line.
+If not specified, it defaults to the value of environment variable
+{}.", ENV_MALE_FIRST_NAMES_FILE)))
+             .arg(Arg::new("last-names")
                  .short('L')
                  .long("last-names")
                  .value_name("PATH")
@@ -169,9 +177,12 @@ specified, defaults to the value of environment variable
         .get_one::<String>("output")
         .map(PathBuf::from)
         .unwrap();
-    let first_names_file = matches
-        .get_one::<String>("first-names")
-        .unwrap_or(&first_names_default);
+    let male_first_names_file = matches
+        .get_one::<String>("male-first-names")
+        .unwrap_or(&male_first_names_default);
+    let female_first_names_file = matches
+        .get_one::<String>("female-first-names")
+        .unwrap_or(&female_first_names_default);
     let last_names_file = matches
         .get_one::<String>("last-names")
         .unwrap_or(&last_names_default);
@@ -188,7 +199,8 @@ specified, defaults to the value of environment variable
         header_format,
         year_min,
         year_max,
-        first_names_file: PathBuf::from(first_names_file),
+        male_first_names_file: PathBuf::from(male_first_names_file),
+        female_first_names_file: PathBuf::from(female_first_names_file),
         last_names_file: PathBuf::from(last_names_file),
         verbose: *matches.get_one::<bool>("verbose").unwrap(),
         output_file: output_file,
@@ -241,10 +253,17 @@ fn validate(args: Arguments) -> Result<Arguments, String> {
         )))
     }
 
-    else if path_is_empty(&args.first_names_file) {
+    else if path_is_empty(&args.male_first_names_file) {
         Err(String::from(format!(
-            "First names file not specified, and {} is not set in environment.",
-            ENV_FIRST_NAMES_FILE
+            "Male first names file not specified, and {} not set in environment.",
+            ENV_MALE_FIRST_NAMES_FILE
+        )))
+    }
+
+    else if path_is_empty(&args.female_first_names_file) {
+        Err(String::from(format!(
+            "Female first names file not specified, and {} not set in environment.",
+            ENV_FEMALE_FIRST_NAMES_FILE
         )))
     }
 
