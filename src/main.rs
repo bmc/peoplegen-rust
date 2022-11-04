@@ -63,7 +63,7 @@ fn run(args: Arguments) -> Result<(), String> {
             args.generate_ssns,
             people
         );
-        let p = people[0];
+
         println!("Wrote {} records(s) to \"{}\".",
                  total, args.output_file.display());
         ()
