@@ -23,7 +23,7 @@ fn main() {
 fn run(args: Arguments) -> Result<(), String> {
     read_names_file(&args.male_first_names_file)
 
-    .and_then(|(male_first_names)| {
+    .and_then(|male_first_names| {
         read_names_file(&args.female_first_names_file)
             .map(|female_first_names| (female_first_names, male_first_names))
     })

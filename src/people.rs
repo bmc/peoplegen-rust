@@ -4,8 +4,6 @@ use std::io::{self, prelude::*};
 use chrono::naive::{NaiveDate, NaiveDateTime};
 use rand::Rng;
 use rand::seq::SliceRandom;
-use csv::{ReaderBuilder, StringRecordsIter};
-use tailcall::tailcall;
 use crate::path::path_str;
 use crate::args::Arguments;
 
