@@ -65,8 +65,8 @@ fn run(args: Arguments) -> Result<(), String> {
             people
         );
 
-        println!("Wrote {} records(s) to \"{}\".",
-                 total, args.output_file.display());
+        println!("Wrote {} records(s) to {} file \"{}\".",
+                 total, args.output_format.to_str(), args.output_file.display());
         ()
     }
 }

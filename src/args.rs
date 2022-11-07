@@ -1,11 +1,10 @@
 //! All things command-line for `peoplegen`, including the argument parser.
 
-use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use clap::{Command, Arg, ArgAction};
 use chrono::{Duration, Utc, Datelike};
-use crate::path::path_is_empty;
+use crate::path::{path_is_empty, file_extension};
 use crate::env::getenv;
 
 const STARTING_YEAR_DEFAULT_DELTA: u32 = 90;
@@ -28,6 +27,20 @@ pub enum OutputFormat {
     JsonPretty,
     JsonL,
     Csv
+}
+
+impl OutputFormat {
+    /**
+     * Returns a `str` representation of an output format, suitable for
+     * printing or formatting.
+     */
+    pub fn to_str(&self) -> &str {
+        match self {
+            OutputFormat::JsonPretty => "JSON",
+            OutputFormat::JsonL => "JSON Lines",
+            OutputFormat::Csv => "CSV",
+        }
+    }
 }
 
 /// Command-line arguments, as parsed.
@@ -145,11 +158,6 @@ specified, defaults to the value of environment variable
                  .value_parser(clap::value_parser!(u32))
                  .help(format!("The ending year for birth dates. Default: {}",
                        default_year_max)))
-        .arg(Arg::new("format")
-                .short('o')
-                .long("format")
-                .default_value("csv")
-                .help("Output format, one of \"csv\", \"json\" or \"jsonl\""))
         .arg(Arg::new("output")
                  .required(true)
                  .value_name("OUTPUT_FILE")
@@ -158,7 +166,11 @@ specified, defaults to the value of environment variable
                  .required(true)
                  .value_name("TOTAL")
                  .value_parser(clap::value_parser!(u32))
-                 .help("How many people to generate"));
+                 .help("How many people to generate"))
+        .after_help(
+"Supports CSV, JSON, and JSON Lines output formats. The output format is
+determined by the output file extension (\".csv\", \".json\", or \".jsonl\").
+See https://github.com/bmc/peoplegen-rust for more information.");
 
     let matches = parser.get_matches();
 
@@ -195,23 +207,6 @@ specified, defaults to the value of environment variable
     let last_names_file = matches
         .get_one::<String>("last-names")
         .unwrap_or(&last_names_default);
-    let output_format = matches
-        .get_one::<String>("format")
-        .map(|s| {
-            if *s == String::from("csv") {
-                Ok(OutputFormat::Csv)
-            }
-            else if *s == String::from("json") {
-                Ok(OutputFormat::JsonPretty)
-            }
-            else if *s == String::from("jsonl") {
-                Ok(OutputFormat::JsonL)
-            }
-            else {
-                Err(format!("Unknown output format: \"{}\"", s))
-            }
-        })
-        .unwrap()?;
     let output_file = matches
         .get_one::<String>("output")
         .map(PathBuf::from)
@@ -220,6 +215,16 @@ specified, defaults to the value of environment variable
         .get_one::<u32>("total")
         .map(|reference| *reference)
         .unwrap();
+
+    let output_format = match file_extension(&output_file) {
+        Some("csv") => Ok(OutputFormat::Csv),
+        Some("json") => Ok(OutputFormat::JsonPretty),
+        Some("jsonl") => Ok(OutputFormat::JsonL),
+        Some(_) | None => Err(format!(
+            "Output file \"{}\" must end in \".csv\", \".json\" or \".jsonl\".",
+            output_file.display()
+        )),
+    }?;
 
     validate(Arguments {
         female_percent,
@@ -247,28 +252,8 @@ fn year_before_now(years: u32) -> u32 {
 
 /// Cross-validate the parsed arguments.
 fn validate(args: Arguments) -> Result<Arguments, String> {
-    fn file_ext(p: &PathBuf) -> &str {
-        p.extension().and_then(OsStr::to_str).unwrap_or("")
-    }
-
     if (args.female_percent + args.male_percent) != 100 {
         Err(String::from("Female and male percentages must add up to 100."))
-    }
-
-    else if (args.output_format == OutputFormat::Csv) &&
-            (file_ext(&args.output_file) != "csv") {
-        Err(String::from(format!(
-            "Output path \"{}\" does not have required \".csv\" extension.",
-            args.output_file.display()
-        )))
-    }
-
-    else if (args.output_format != OutputFormat::Csv) &&
-            (file_ext(&args.output_file) != "json") {
-        Err(String::from(format!(
-            "Output path \"{}\" does not have required \".json\" extension.",
-            args.output_file.display()
-        )))
     }
 
     else if args.year_min > args.year_max {
