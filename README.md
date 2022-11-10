@@ -14,7 +14,9 @@ gender reality.)
 
 This is a Rust version of the original Scala
 [peoplegen](https://github.com/bmc/peoplegen) tool I built awhile ago. I
-made this Rust version as part of my "learning Rust" journey.
+made this Rust version as part of my "learning Rust" journey. One advantage
+this version has over the Scala version: The Rust version is considerably
+faster, since it compiles down to a native executable.
 
 The tool can generate CSV or JSON output.
 
