@@ -102,7 +102,7 @@ etc.
 ## Salaries
 
 `peoplegen` can optionally generate a salary for each person. It generates
-salaries as a normal distribution of integers, around a mean of 50,000
+salaries as a normal distribution of integers, around a mean of $58,260
 (the United States mean salary across all occupations, for 2021, according to
 the [Bureau of Labor Statistics](https://www.bls.gov/oes/current/oes_nat.htm)).
 It uses a sigma (i.e., a "spread", or the standard deviation) of 5,000 by
