@@ -58,15 +58,15 @@ At any time, you can run `peoplegen --help` for a usage summary.
 
 ## Output Formats
 
-The `-o` option specifies the desired output format. There are three
-possible values:
+The output file extension dictates the output format. The following
+extensions are supported:
 
-**`csv`**
+**`.csv`**
 
 Generate a CSV file, with a header. The output file must
 end with `.csv`.
 
-**`json`**
+**`.json`**
 
 Generate a "normal" JSON file. The output file must end with `.json`.
 The JSON is of the following form (though it is _not_ pretty-printed):
@@ -80,7 +80,7 @@ The JSON is of the following form (though it is _not_ pretty-printed):
 ]}
 ```
 
-**`jsonl`**
+**`.jsonl`**
 
 Creates a [JSON Lines](https://jsonlines.org/) file from a vector of randomly
 generated `Person` objects. The output file must end with `.json`.
