@@ -102,6 +102,7 @@ pub fn parse_args() -> Result<Arguments, String> {
     let last_names_default = getenv(ENV_LAST_NAMES_FILE);
 
     let parser = Command::new("peoplegen")
+        // See https://stackoverflow.com/a/27841363/53495
         .version(env!("CARGO_PKG_VERSION"))
         .author("bmc@clapper.org")
         .about("Generate fake people data in a CSV")
