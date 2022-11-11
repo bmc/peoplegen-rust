@@ -99,6 +99,22 @@ JSON files of this form are well-suited for ingesting into distributed
 systems such as Apache Spark, for processing with line-based Unix tools,
 etc.
 
+## Salaries
+
+`peoplegen` can optionally generate a salary for each person. It generates
+salaries as a normal distribution of integers, around a mean of 50,000
+(the United States mean salary across all occupations, for 2021, according to
+the [Bureau of Labor Statistics](https://www.bls.gov/oes/current/oes_nat.htm)).
+It uses a sigma (i.e., a "spread", or the standard deviation) of 5,000 by
+default.
+
+You can change both of those numbers using `--salary-mean` and
+`--salary-sigma`, respectively. For instance, if you want to use the mean
+salary for computer programmers in 2021, specify `--salary-mean 120990`.
+
+**Warning**: changing either or both values _can_ result in negative salaries,
+which will cause `peoplegen` to abort.
+
 ## About those Social Security numbers
 
 `peoplegen` will optionally generate Social Security numbers for each

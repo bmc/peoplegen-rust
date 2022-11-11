@@ -13,6 +13,16 @@ const ENV_MALE_FIRST_NAMES_FILE: &str = "PEOPLEGEN_MALE_FIRST_NAMES";
 const ENV_FEMALE_FIRST_NAMES_FILE: &str = "PEOPLEGEN_FEMALE_FIRST_NAMES";
 const ENV_LAST_NAMES_FILE: &str = "PEOPLEGEN_LAST_NAMES";
 
+// 2021 mean salary across all professions, per the Bureau of Labor Statistics.
+// See https://www.bls.gov/oes/current/oes_nat.htm
+//
+// These next two constants are strings, mostly to keep the argument parser
+// happy.
+const SALARY_MEAN_DEFAULT: &str = "58260";
+
+// This is arbitrary
+const SALARY_SIGMA_DEFAULT: &str = "5000";
+
 /// The header format to use in the output CSV file.
 #[derive(Debug, Copy, Clone)]
 pub enum HeaderFormat {
@@ -50,6 +60,9 @@ pub struct Arguments {
     pub male_percent: u32,
     pub generate_ssns: bool,
     pub generate_ids: bool,
+    pub generate_salaries: bool,
+    pub salary_mean: u32,
+    pub salary_sigma: u32,
     pub header_format: HeaderFormat,
     pub year_min: u32,
     pub year_max: u32,
@@ -89,7 +102,7 @@ pub fn parse_args() -> Result<Arguments, String> {
     let last_names_default = getenv(ENV_LAST_NAMES_FILE);
 
     let parser = Command::new("peoplegen")
-        .version("0.1.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("bmc@clapper.org")
         .about("Generate fake people data in a CSV")
         .arg(Arg::new("female")
@@ -135,6 +148,27 @@ specified, defaults to the value of environment variable
                  .long("ssn")
                  .action(ArgAction::SetTrue)
                  .help("Generate fake (and invalid) Social Security numbers"))
+        .arg(Arg::new("salary")
+                 .short('S')
+                 .long("salary")
+                 .action(ArgAction::SetTrue)
+                 .help(format!(
+"Generate a salary for each person. Salaries are generated as
+a normal (Poisson) distribution with a mean salary of {} (the
+2021 mean salary for all professions, according to the Bureau of
+Labor Statistics) and a sigma (standard deviation) of {}. You can
+change those values with --salary-mean and --salary-sigma",
+SALARY_MEAN_DEFAULT, SALARY_SIGMA_DEFAULT)))
+        .arg(Arg::new("salary-mean")
+                 .long("salary-mean")
+                 .value_parser(clap::value_parser!(u32))
+                 .default_value(SALARY_MEAN_DEFAULT)
+                 .help(format!("Mean salary to use.")))
+        .arg(Arg::new("salary-sigma")
+                 .long("salary-sigma")
+                 .value_parser(clap::value_parser!(u32))
+                 .default_value(SALARY_SIGMA_DEFAULT)
+                 .help(format!("Sigma (standard deviation) for salaries.")))
         .arg(Arg::new("id")
                  .short('i')
                  .long("id")
@@ -207,6 +241,14 @@ See https://github.com/bmc/peoplegen-rust for more information.");
     let last_names_file = matches
         .get_one::<String>("last-names")
         .unwrap_or(&last_names_default);
+    let salary_mean = matches
+        .get_one::<u32>("salary-mean")
+        .map(|reference| *reference)
+        .unwrap();
+    let salary_sigma = matches
+        .get_one::<u32>("salary-sigma")
+        .map(|reference| *reference)
+        .unwrap();
     let output_file = matches
         .get_one::<String>("output")
         .map(PathBuf::from)
@@ -231,6 +273,9 @@ See https://github.com/bmc/peoplegen-rust for more information.");
         male_percent,
         generate_ssns: *matches.get_one::<bool>("ssn").unwrap(),
         generate_ids: *matches.get_one::<bool>("id").unwrap(),
+        generate_salaries: *matches.get_one::<bool>("salary").unwrap(),
+        salary_mean,
+        salary_sigma,
         header_format,
         year_min,
         year_max,

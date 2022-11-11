@@ -12,6 +12,7 @@ use csv::WriterBuilder;
 use json::JsonValue;
 use rand::seq::SliceRandom;
 use rand::Rng;
+use rand_distr::{Normal, Distribution};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::LineWriter;
@@ -69,6 +70,7 @@ pub struct Person {
     pub gender: Gender,
     pub birth_date: NaiveDate,
     pub ssn: String,
+    pub salary: u32
 }
 
 const HEADER_ID_KEY: &str = "id";
@@ -78,6 +80,7 @@ const HEADER_MIDDLE_NAME_KEY: &str = "middle_name";
 const HEADER_GENDER_KEY: &str = "gender";
 const HEADER_BIRTH_DATE_KEY: &str = "birth_date";
 const HEADER_SSN_KEY: &str = "ssn";
+const HEADER_SALARY_KEY: &str = "salary";
 
 const REQUIRED_HEADERS: [&str; 5] = [
     HEADER_FIRST_NAME_KEY,
@@ -135,7 +138,7 @@ pub fn make_people(
     male_first_names: &Vec<String>,
     female_first_names: &Vec<String>,
     last_names: &Vec<String>,
-) -> Vec<Person> {
+) -> Result<Vec<Person>, String> {
     let epoch_start = NaiveDate::from_ymd(args.year_min as i32, 1, 1)
         .and_hms(0, 0, 0)
         .timestamp();
@@ -149,13 +152,28 @@ pub fn make_people(
     let mut ssn_prefixes: Vec<u32> = (900..=999).collect();
     ssn_prefixes.push(666);
 
+    let normal_dist =
+        Normal::new(args.salary_mean as f32, args.salary_sigma as f32)
+              .map_err(|e| format!("{}", e))?;
+    let mut get_salary = || {
+        let s = normal_dist.sample(&mut rng);
+        if s < 0.0 {
+            Err(format!("Generated negative salary ({s})"))
+        }
+        else {
+            Ok(s as u32)
+        }
+    };
+
     let mut buf: Vec<Person> = Vec::new();
 
     for _ in 0..total_males {
+        let salary = get_salary()?;
         let p = make_person(
             male_first_names,
             last_names,
             Gender::Male,
+            salary,
             epoch_start,
             epoch_end,
             &ssn_prefixes,
@@ -164,10 +182,12 @@ pub fn make_people(
     }
 
     for _ in 0..total_females {
+        let salary = get_salary()?;
         let p = make_person(
             female_first_names,
             last_names,
             Gender::Female,
+            salary,
             epoch_start,
             epoch_end,
             &ssn_prefixes,
@@ -176,7 +196,7 @@ pub fn make_people(
     }
 
     buf.shuffle(&mut rng);
-    buf
+    Ok(buf)
 }
 
 /**
@@ -191,6 +211,7 @@ pub fn make_people(
  * - `generate_ids`: Whether or not to generate and save unique numeric IDs
  *                   for each person
  * - `save_ssns`: Whether or not to save the fake Social Security numbers
+ * - `save_salaries`: Whether or not to save generated salary data
  * - `people`: The list of randomly generated people to save. Note that this
  *             parameter isn't a reference and is, therefore, consumed by this
  *             function.
@@ -206,13 +227,21 @@ pub fn write_people(
     header_format: HeaderFormat,
     generate_ids: bool,
     save_ssns: bool,
+    save_salaries: bool,
     people: Vec<Person>,
 ) -> Result<usize, String> {
     match output_format {
-        OutputFormat::Csv => write_csv(path, header_format, generate_ids, save_ssns, people),
-        OutputFormat::JsonL => write_jsonl(path, header_format, generate_ids, save_ssns, people),
+        OutputFormat::Csv => {
+            write_csv(path, header_format, generate_ids, save_ssns,
+                      save_salaries, people)
+        },
+        OutputFormat::JsonL => {
+            write_jsonl(path, header_format, generate_ids, save_ssns,
+                        save_salaries, people)
+        },
         OutputFormat::JsonPretty => {
-            write_json(path, header_format, generate_ids, save_ssns, people)
+            write_json(path, header_format, generate_ids, save_ssns,
+                       save_salaries, people)
         }
     }
 }
@@ -245,6 +274,7 @@ pub fn write_people(
  * - `generate_ids`: Whether or not to generate and save unique numeric IDs
  *                   for each person
  * - `save_ssns`: Whether or not to save the fake Social Security numbers
+ * - `save_salaries`: Whether or not to save generated salary data
  * - `people`: The list of randomly generated people to save. Note that this
  *             parameter isn't a reference and is, therefore, consumed by this
  *             function.
@@ -260,6 +290,7 @@ fn write_jsonl(
     header_format: HeaderFormat,
     generate_ids: bool,
     save_ssns: bool,
+    save_salaries: bool,
     people: Vec<Person>,
 ) -> Result<usize, String> {
     let file = File::create(path).map_err(|e| format!("{}", e))?;
@@ -269,7 +300,7 @@ fn write_jsonl(
     for (i, p) in people.iter().enumerate() {
         let id = if generate_ids { Some(i + 1) } else {None};
 
-        let jv = person_to_json_object(p, &headers, id, save_ssns)?;
+        let jv = person_to_json_object(p, &headers, id, save_ssns, save_salaries)?;
 
         let json_line = jv.dump();
 
@@ -300,6 +331,7 @@ fn write_jsonl(
  * - `generate_ids`: Whether or not to generate and save unique numeric IDs
  *                   for each person
  * - `save_ssns`: Whether or not to save the fake Social Security numbers
+ * - `save_salaries`: Whether or not to save generated salary data
  * - `people`: The list of randomly generated people to save. Note that this
  *             parameter isn't a reference and is, therefore, consumed by this
  *             function.
@@ -314,6 +346,7 @@ fn write_json(
     header_format: HeaderFormat,
     generate_ids: bool,
     save_ssns: bool,
+    save_salaries: bool,
     people: Vec<Person>,
 ) -> Result<usize, String> {
 
@@ -326,7 +359,7 @@ fn write_json(
     for (i, p) in people.iter().enumerate() {
         let id = if generate_ids { Some(i + 1) } else {None};
 
-        let jv = person_to_json_object(p, &headers, id, save_ssns)?;
+        let jv = person_to_json_object(p, &headers, id, save_ssns, save_salaries)?;
         ja.push(jv).map_err(|e| format!("{}", e))?;
     }
 
@@ -363,6 +396,7 @@ fn write_csv(
     header_format: HeaderFormat,
     generate_ids: bool,
     save_ssns: bool,
+    save_salaries: bool,
     people: Vec<Person>,
 ) -> Result<usize, String> {
 
@@ -386,12 +420,17 @@ fn write_csv(
         header_rec.push(headers.get(HEADER_SSN_KEY).unwrap());
     }
 
+    if save_salaries {
+        header_rec.push(headers.get(HEADER_SALARY_KEY).unwrap());
+    }
+
     w.write_record(&header_rec).map_err(|e| format!("{}", e))?;
 
     for (i, p) in people.iter().enumerate() {
         let id = i + 1;
         let id_str = id.to_string();
         let mut rec: Vec<&String> = Vec::new();
+        let salary = p.salary.to_string();
 
         if generate_ids {
             rec.push(&id_str);
@@ -410,6 +449,10 @@ fn write_csv(
 
         if save_ssns {
             rec.push(&p.ssn);
+        }
+
+        if save_salaries {
+            rec.push(&salary);
         }
 
         w.write_record(&rec).map_err(|e| format!("{}", e))?;
@@ -438,6 +481,7 @@ fn person_to_json_object(
     headers: &HashMap<&str, String>,
     opt_id: Option<usize>,
     save_ssn: bool,
+    save_salary: bool
 ) -> Result<JsonValue, String> {
     let id_key = headers.get(HEADER_ID_KEY).unwrap();
     let first_name_key = headers.get(HEADER_FIRST_NAME_KEY).unwrap();
@@ -446,6 +490,7 @@ fn person_to_json_object(
     let gender_key = headers.get(HEADER_GENDER_KEY).unwrap();
     let birth_date_key = headers.get(HEADER_BIRTH_DATE_KEY).unwrap();
     let ssn_key = headers.get(HEADER_SSN_KEY).unwrap();
+    let salary_key = headers.get(HEADER_SALARY_KEY).unwrap();
 
     let mut rec = JsonValue::new_object();
     let s_id = opt_id.map(|i| i.to_string());
@@ -458,6 +503,7 @@ fn person_to_json_object(
     let middle_name = person.middle_name.to_string();
     let last_name = person.last_name.to_string();
     let ssn = person.ssn.to_string();
+    let salary = person.salary.to_string();
 
     if let Some(s) = s_id {
         rec.insert(&id_key, s).map_err(|e| format!("{}", e))?;
@@ -476,6 +522,10 @@ fn person_to_json_object(
 
     if save_ssn {
         rec.insert(&ssn_key, ssn).map_err(|e| format!("{}", e))?;
+    }
+
+    if save_salary {
+        rec.insert(&salary_key, salary).map_err(|e| format!("{}", e))?;
     }
 
     Ok(rec)
@@ -497,6 +547,7 @@ fn get_headers(header_format: HeaderFormat) -> HashMap<&'static str, String> {
             m.insert(HEADER_GENDER_KEY, String::from("gender"));
             m.insert(HEADER_BIRTH_DATE_KEY, String::from("birth_date"));
             m.insert(HEADER_SSN_KEY, String::from("ssn"));
+            m.insert(HEADER_SALARY_KEY, String::from("salary"));
         }
         HeaderFormat::CamelCase => {
             m.insert(HEADER_ID_KEY, String::from("id"));
@@ -506,6 +557,7 @@ fn get_headers(header_format: HeaderFormat) -> HashMap<&'static str, String> {
             m.insert(HEADER_GENDER_KEY, String::from("gender"));
             m.insert(HEADER_BIRTH_DATE_KEY, String::from("birthDate"));
             m.insert(HEADER_SSN_KEY, String::from("ssn"));
+            m.insert(HEADER_SALARY_KEY, String::from("salary"));
         }
         HeaderFormat::Pretty => {
             m.insert(HEADER_ID_KEY, String::from("ID"));
@@ -515,6 +567,7 @@ fn get_headers(header_format: HeaderFormat) -> HashMap<&'static str, String> {
             m.insert(HEADER_GENDER_KEY, String::from("Gender"));
             m.insert(HEADER_BIRTH_DATE_KEY, String::from("Birth Date"));
             m.insert(HEADER_SSN_KEY, String::from("SSN"));
+            m.insert(HEADER_SALARY_KEY, String::from("Salary"));
         }
     };
 
@@ -565,6 +618,7 @@ fn make_person(
     first_names: &Vec<String>,
     last_names: &Vec<String>,
     gender: Gender,
+    salary: u32,
     epoch_start: i64,
     epoch_end: i64,
     ssn_prefixes: &Vec<u32>,
@@ -582,5 +636,6 @@ fn make_person(
         gender: gender,
         birth_date: birth_date,
         ssn: make_ssn(ssn_prefixes),
+        salary
     }
 }

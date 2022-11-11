@@ -19,7 +19,8 @@ pub mod env;
 fn main() {
     let res = result! {
         let args <- parse_args();
-        run(args)
+        let res <- run(args);
+        res
     };
 
     match res {
@@ -50,18 +51,20 @@ fn run(args: Arguments) -> Result<(), String> {
         let male_first_names <- read_names_file(&args.male_first_names_file);
         let female_first_names <- read_names_file(&args.female_first_names_file);
         let last_names <- read_names_file(&args.last_names_file);
-        let people = make_people(
+        let people <- make_people(
             &args,
             &male_first_names,
             &female_first_names,
             &last_names
         );
+
         let total <- write_people(
             &args.output_file,
             args.output_format,
             args.header_format,
             args.generate_ids,
             args.generate_ssns,
+            args.generate_salaries,
             people
         );
 
