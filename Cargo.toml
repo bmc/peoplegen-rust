@@ -1,6 +1,6 @@
 [package]
 name = "peoplegen"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -20,3 +20,4 @@ funty = "2.0"
 # Enables a comprehension-like syntax for Result, Option, Iterator, etc.
 comp = "0.2"
 rand_distr = "0.4"
+thousands = "0.2"
