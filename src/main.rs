@@ -12,6 +12,7 @@ pub mod args;
 pub mod people;
 pub mod path;
 pub mod env;
+pub mod ssn;
 
 /**
  * Main program.

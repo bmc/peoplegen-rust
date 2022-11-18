@@ -71,7 +71,7 @@ pub struct Arguments {
     pub last_names_file: PathBuf,
     pub output_file: PathBuf,
     pub output_format: OutputFormat,
-    pub total: u32
+    pub total: u64
 }
 
 /**
@@ -200,7 +200,7 @@ SALARY_MEAN_DEFAULT, SALARY_SIGMA_DEFAULT)))
         .arg(Arg::new("total")
                  .required(true)
                  .value_name("TOTAL")
-                 .value_parser(clap::value_parser!(u32))
+                 .value_parser(clap::value_parser!(u64))
                  .help("How many people to generate"))
         .after_help(
 "Supports CSV, JSON, and JSON Lines output formats. The output format is
@@ -255,7 +255,7 @@ See https://github.com/bmc/peoplegen-rust for more information.");
         .map(PathBuf::from)
         .unwrap();
     let total = matches
-        .get_one::<u32>("total")
+        .get_one::<u64>("total")
         .map(|reference| *reference)
         .unwrap();
 

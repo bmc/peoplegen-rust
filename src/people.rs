@@ -7,6 +7,7 @@
 
 use crate::args::{Arguments, HeaderFormat, OutputFormat};
 use crate::path::path_str;
+use crate::ssn::SsnGenerator;
 use chrono::naive::{NaiveDate, NaiveDateTime};
 use csv::WriterBuilder;
 use json::JsonValue;
@@ -18,6 +19,7 @@ use std::fs::File;
 use std::io::LineWriter;
 use std::io::{self, prelude::*};
 use std::path::PathBuf;
+use thousands::Separable;
 
 /**
  * Abstract representation of gender. Too restrictive currently, but it
@@ -145,12 +147,22 @@ pub fn make_people(
     let epoch_end = NaiveDate::from_ymd(args.year_max as i32, 12, 31)
         .and_hms(23, 59, 59)
         .timestamp();
-    let total_males: u32 = (args.total * args.male_percent) / 100;
-    let w = (args.total * args.female_percent) / 100;
+    let male_percent = args.male_percent as u64;
+    let female_percent = args.female_percent as u64;
+    let total_males: u64 = (args.total * male_percent) / 100;
+    let w = (args.total * female_percent) / 100;
     let total_females = w + (args.total - total_males - w);
     let mut rng = rand::thread_rng();
-    let mut ssn_prefixes: Vec<u32> = (900..=999).collect();
-    ssn_prefixes.push(666);
+    let mut ssns = SsnGenerator::new_auto_reset();
+
+    if args.total > ssns.total() {
+        println!(
+"Warning: There are {} total unique SSNs.
+You're generating {} people.
+There will be some repeated SSNs.",
+ssns.total().separate_with_commas(),
+args.total.separate_with_commas())
+    }
 
     let normal_dist =
         Normal::new(args.salary_mean as f32, args.salary_sigma as f32)
@@ -169,6 +181,7 @@ pub fn make_people(
 
     for _ in 0..total_males {
         let salary = get_salary()?;
+        let ssn = ssns.next().unwrap();
         let p = make_person(
             male_first_names,
             last_names,
@@ -176,13 +189,14 @@ pub fn make_people(
             salary,
             epoch_start,
             epoch_end,
-            &ssn_prefixes,
+            ssn,
         );
         buf.push(p)
     }
 
     for _ in 0..total_females {
         let salary = get_salary()?;
+        let ssn = ssns.next().unwrap();
         let p = make_person(
             female_first_names,
             last_names,
@@ -190,7 +204,7 @@ pub fn make_people(
             salary,
             epoch_start,
             epoch_end,
-            &ssn_prefixes,
+            ssn,
         );
         buf.push(p)
     }
@@ -575,29 +589,6 @@ fn get_headers(header_format: HeaderFormat) -> HashMap<&'static str, String> {
 }
 
 /**
- * Generate a fake Social Security number. These numbers are guaranteed to
- * be unused.
- *
- * # Arguments
- *
- * - `ssn_prefixes`: The set of known unused Social Security prefixes (the
- *                   first three numbers of an SSN).
- *
- * # Returns
- *
- * The generated Social Security number.
- */
-fn make_ssn(ssn_prefixes: &Vec<u32>) -> String {
-    let mut rng = rand::thread_rng();
-    let first_index = rng.gen_range(0..ssn_prefixes.len());
-    let first = ssn_prefixes[first_index];
-    let second = rng.gen_range(10..=99);
-    let third = rng.gen_range(1000..=9999);
-
-    format!("{}-{}-{}", first, second, third)
-}
-
-/**
  * Randomly generate a single `Person`.
  *
  * # Arguments
@@ -621,7 +612,7 @@ fn make_person(
     salary: u32,
     epoch_start: i64,
     epoch_end: i64,
-    ssn_prefixes: &Vec<u32>,
+    ssn: String
 ) -> Person {
     let first_index = rand::thread_rng().gen_range(0..first_names.len());
     let mid_index = rand::thread_rng().gen_range(0..first_names.len());
@@ -635,7 +626,7 @@ fn make_person(
         last_name: String::from(&last_names[last_index]),
         gender: gender,
         birth_date: birth_date,
-        ssn: make_ssn(ssn_prefixes),
+        ssn,
         salary
     }
 }
