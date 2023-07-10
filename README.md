@@ -25,9 +25,9 @@ As is probably obvious, I use this program to generate test data.
 ----
 
 **WARNING:** I built this tool for myself, as a concrete programming exercise
-while learning Rust. (I'm _still_ learning Rust.) You're welcome to use it,
+while learning Rust. (I'm *still* learning Rust.) You're welcome to use it,
 read it, comment constructively on any non-idiomatic Rust you find, etc.
-However, do _not_ expect me to maintain this tool rigorously. It's a playground
+However, do *not* expect me to maintain this tool rigorously. It's a playground
 for me, as well as something I use occasionally. That's all.
 
 ----
@@ -69,7 +69,7 @@ end with `.csv`.
 **`.json`**
 
 Generate a "normal" JSON file. The output file must end with `.json`.
-The JSON is of the following form (though it is _not_ pretty-printed):
+The JSON is of the following form (though it is *not* pretty-printed):
 
 ```json
 {"people": [
@@ -112,14 +112,19 @@ You can change both of those numbers using `--salary-mean` and
 `--salary-sigma`, respectively. For instance, if you want to use the mean
 salary for computer programmers in 2021, specify `--salary-mean 120990`.
 
-**Warning**: changing either or both values _can_ result in negative salaries,
+**Warning**: changing either or both values *can* result in negative salaries,
 which will cause `peoplegen` to abort.
 
 ## About those Social Security numbers
 
-`peoplegen` will optionally generate Social Security numbers for each
-person. The generated Social Security numbers are deliberately invalid,
+`peoplegen` will optionally generate United States Social Security numbers for
+each person. The generated Social Security numbers are deliberately invalid,
 generated as described here: <https://stackoverflow.com/a/2313726/53495>
+
+Specifically, this program generates Social Security numbers with prefixes
+in the range 900-999, plus the prefix 666. This works out to a total of
+99,980,001 possible Social Security numbers. **If you generate more than
+99,980,001 people, some Social Security numbers *will* be reused.**
 
 ## License
 
