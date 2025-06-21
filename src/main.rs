@@ -17,9 +17,7 @@ pub mod path;
 pub mod env;
 pub mod ssn;
 
-/**
- * Main program.
- */
+/// Main program.
 fn main() {
     let res = result! {
         let args <- parse_args();
@@ -36,19 +34,17 @@ fn main() {
     }
 }
 
-/**
- * `run` implements the main logic of the program, once command-line arguments
- * have been parsed.
- *
- * # Arguments
- *
- * - `args`: The parsed command-line arguments
- *
- * # Returns
- *
- * - `Ok(())`: Everything worked. No result.
- * - `Err(msg)`: Something failed, and `msg` explains the error.
- */
+/// `run` implements the main logic of the program, once command-line arguments
+/// have been parsed.
+///
+/// # Arguments
+///
+/// - `args`: The parsed command-line arguments
+///
+/// # Returns
+///
+/// - `Ok(())`: Everything worked. No result.
+/// - `Err(msg)`: Something failed, and `msg` explains the error.
 fn run(args: Arguments) -> Result<(), String> {
     result! {
         // The macro requires <- for "assignments" that return Result.

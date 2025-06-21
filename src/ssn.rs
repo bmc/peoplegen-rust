@@ -1,15 +1,13 @@
 use std::iter::Iterator;
 
-/**
- * This struct can be used to generate Social Security numbers, as an iterator.
- * If you use `SsnGenerator::new()` to create the object, it will prepopulate
- * the fields with appropriate values to generate guaranteed-fake SSNs. These
- * defaults will generate a maximum of 99,980,001 fake Social Security numbers,
- * before the iterator runs out. If you then reset the iterator, it will start
- * again. You can also use the `SsnGenerator::new_auto_reset()`
- * constructor to have the generator auto-reset (and, therefore, cycle)
- * infinitely.
- */
+/// This struct can be used to generate Social Security numbers, as an iterator.
+/// If you use `SsnGenerator::new()` to create the object, it will prepopulate
+/// the fields with appropriate values to generate guaranteed-fake SSNs. These
+/// defaults will generate a maximum of 99,980,001 fake Social Security numbers,
+/// before the iterator runs out. If you then reset the iterator, it will start
+/// again. You can also use the `SsnGenerator::new_auto_reset()`
+/// constructor to have the generator auto-reset (and, therefore, cycle)
+/// infinitely.
 pub struct SsnGenerator {
     prefixes: Vec<u32>,
     prefix_index: usize,
@@ -23,17 +21,17 @@ pub struct SsnGenerator {
 }
 
 impl SsnGenerator {
-    /**
-     * Create a new `SsnGenerator` with default values, including a set of
-     * Social Security prefixes (the first group of three numbers) that are
-     * guaranteed to be fake, per the approach outlined at
-     * <https://stackoverflow.com/a/2313726/53495>
-     *
-     * This generator will _not_ auto-reset when it gets to the end of the
-     * sequence. Use `SsnGenerator::new_auto_reset()` to create a generator
-     * that will cycle back to the beginning automatically. You can manually
-     * reset the generator yourself by calling the `reset()` function.
-     */
+
+    /// Create a new `SsnGenerator` with default values, including a set of
+    /// Social Security prefixes (the first group of three numbers) that are
+    /// guaranteed to be fake, per the approach outlined at
+    /// <https://stackoverflow.com/a/2313726/53495>
+    ///
+    /// This generator will _not_ auto-reset when it gets to the end of the
+    /// sequence. Use `SsnGenerator::new_auto_reset()` to create a generator
+    /// that will cycle back to the beginning automatically. You can manually
+    /// reset the generator yourself by calling the `reset()` function.
+    ///
     pub fn new() -> Self {
         let mut prefixes: Vec<u32> = (900..=999).collect();
         prefixes.push(666);
@@ -50,26 +48,22 @@ impl SsnGenerator {
         }
     }
 
-    /**
-     * Create a new `SsnGenerator` with default values, including a set of
-     * Social Security prefixes (the first group of three numbers) that are
-     * guaranteed to be fake, per the approach outlined at
-     * <https://stackoverflow.com/a/2313726/53495>
-     *
-     * This generator will auto-reset when it gets to the end of the
-     * sequence. Use `SsnGenerator::new())` to create a generator will not
-     * cycle back to the beginning automatically.
-     */
+    /// Create a new `SsnGenerator` with default values, including a set of
+    /// Social Security prefixes (the first group of three numbers) that are
+    /// guaranteed to be fake, per the approach outlined at
+    /// <https://stackoverflow.com/a/2313726/53495>
+    ///
+    /// This generator will auto-reset when it gets to the end of the
+    /// sequence. Use `SsnGenerator::new())` to create a generator will not
+    /// cycle back to the beginning automatically.
     pub fn new_auto_reset() -> Self {
         let mut s = SsnGenerator::new();
         s.auto_reset = true;
         s
     }
 
-    /**
-     * Create a new `SsnGenerator`, with complete control over the fields.
-     * This constructor is intended primarily for testing.
-     */
+     /// Create a new `SsnGenerator`, with complete control over the fields.
+     /// This constructor is intended primarily for testing.
     pub fn new_for_tests(prefixes: Vec<u32>,
                          mid_min: u32,
                          mid_max: u32,
@@ -115,11 +109,14 @@ impl SsnGenerator {
 impl Iterator for SsnGenerator {
     type Item = String;
 
-    /**
-     * Get the next Social Security number in the sequence. If auto-reset
-     * is enabled, and there are no more numbers in the sequence, the generator
-     * will start at the beginning again. Otherwise, it will return `None`.
-     */
+    /// Get the next Social Security number in the sequence. If auto-reset is
+    /// enabled, and there are no more numbers in the sequence, the generator
+    /// will start at the beginning again. Otherwise, it will return `None`.
+    ///
+    /// # Returns
+    ///
+    /// `Some<String>` containing the next Social Security number in the
+    /// sequence, or `None` if there are no more numbers in the sequence.
     fn next(&mut self) -> Option<Self::Item> {
         if (self.prefix_index == (self.prefixes.len() - 1)) &&
            (self.mid_cur == self.mid_max) &&

@@ -21,10 +21,8 @@ use std::io::{self, prelude::*};
 use std::path::PathBuf;
 use thousands::Separable;
 
-/**
- * Abstract representation of gender. Too restrictive currently, but it
- * matches the gender definitions in the 2010 Census Bureau data.
-*/
+/// Abstract representation of gender. Too restrictive currently, but it
+/// matches the gender definitions in the 2010 Census Bureau data.
 #[derive(PartialEq)]
 pub enum Gender {
     Male,
@@ -32,10 +30,8 @@ pub enum Gender {
 }
 
 impl Gender {
-    /**
-     * Converts a `Gender` value to a string suitable for display or for
-     * writing to a CSV file.
-     */
+    /// Converts a `Gender` value to a string suitable for display or for
+    /// writing to a CSV file.
     pub fn to_str(&self) -> &str {
         if *self == Gender::Male {
             "M"
@@ -44,27 +40,23 @@ impl Gender {
         }
     }
 
-    /**
-     * Converts a `Gender` value to a string suitable for display or for
-     * writing to a CSV file.
-     */
+    /// Converts a `Gender` value to a string suitable for display or for
+    /// writing to a CSV file.
     pub fn to_string(&self) -> String {
         String::from(self.to_str())
     }
 }
 
-/**
- * Represents a generated person.
- *
- * # Fields
- *
- * - `first_name`: The person's first name (gender-specific)
- * - `middle_name`: The person's middle name (gender-specific)
- * - `last_name`: The person's last name
- * - `gender`: The gender
- * - `birth_date`: The person's birth date
- * - `ssn`: The person's (fake) U.S. Social Security Number
-*/
+/// Represents a generated person.
+///
+/// # Fields
+///
+/// - `first_name`: The person's first name (gender-specific)
+/// - `middle_name`: The person's middle name (gender-specific)
+/// - `last_name`: The person's last name
+/// - `gender`: The gender
+/// - `birth_date`: The person's birth date
+/// - `ssn`: The person's (fake) U.S. Social Security Number
 pub struct Person {
     pub first_name: String,
     pub middle_name: String,
@@ -92,18 +84,16 @@ const REQUIRED_HEADERS: [&str; 5] = [
     HEADER_BIRTH_DATE_KEY,
 ];
 
-/**
- * Read a file of names into a vector of strings.
- *
- * # Arguments
- *
- * - path: The path to the file to be read
- *
- * # Returns
- *
- * - `Ok(v)`: The file was successfully read into vector `v`
- * - `Err(msg)`: The file could not be read, and `msg` explains why
-*/
+/// Read a file of names into a vector of strings.
+///
+/// # Arguments
+///
+/// - path: The path to the file to be read
+///
+/// # Returns
+///
+/// - `Ok(v)`: The file was successfully read into vector `v`
+/// - `Err(msg)`: The file could not be read, and `msg` explains why
 pub fn read_names_file(path: &PathBuf) -> Result<Vec<String>, String> {
     let file = File::open(path).map_err(|e| format!("\"{}\": {}", path_str(path), e))?;
     let reader = io::BufReader::new(file);
@@ -117,24 +107,22 @@ pub fn read_names_file(path: &PathBuf) -> Result<Vec<String>, String> {
     Ok(buf)
 }
 
-/**
- * Generate the fake people, based on the command-line settings. Note that
- * fake Social Security numbers are always generated, regardless of the
- * setting of `args.generate_ssns`. They should be suppressed at write-time,
- * if desired.
- *
- * # Arguments
- *
- * - `args`: The parsed command-line arguments. The number of people generated
- * is taken from `args.total`.
- * - `male_first_names`: The list of male first names
- * - `female_first_names`: The list of female first names
- * - `last_names`: The list of last names
- *
- * # Returns
- *
- * A vector containing the randomly generated `Person` objects.
- */
+/// Generate the fake people, based on the command-line settings. Note that
+/// fake Social Security numbers are always generated, regardless of the
+/// setting of `args.generate_ssns`. They should be suppressed at write-time,
+/// if desired.
+///
+/// # Arguments
+///
+/// - `args`: The parsed command-line arguments. The number of people generated
+///   is taken from `args.total`.
+/// - `male_first_names`: The list of male first names
+/// - `female_first_names`: The list of female first names
+/// - `last_names`: The list of last names
+///
+/// # Returns
+///
+/// A vector containing the randomly generated `Person` objects.
 pub fn make_people(
     args: &Arguments,
     male_first_names: &Vec<String>,
@@ -213,28 +201,26 @@ args.total.separate_with_commas())
     Ok(buf)
 }
 
-/**
- * Creates a CSV or JSON file from a vector of randomly generated `Person`
- * objects.
- *
- * # Arguments
- *
- * - `path`: The path to the CSV file to create or overwrite
- * - `output_format`: The output format of the file
- * - `header_format`: What style of CSV header names or JSON keys to use.
- * - `generate_ids`: Whether or not to generate and save unique numeric IDs
- *                   for each person
- * - `save_ssns`: Whether or not to save the fake Social Security numbers
- * - `save_salaries`: Whether or not to save generated salary data
- * - `people`: The list of randomly generated people to save. Note that this
- *             parameter isn't a reference and is, therefore, consumed by this
- *             function.
- *
- * # Returns
- *
- * - `Ok(total)`: The save was successful, and `total` people were written
- * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
- */
+/// Creates a CSV or JSON file from a vector of randomly generated `Person`
+/// objects.
+///
+/// # Arguments
+///
+/// - `path`: The path to the CSV file to create or overwrite
+/// - `output_format`: The output format of the file
+/// - `header_format`: What style of CSV header names or JSON keys to use.
+/// - `generate_ids`: Whether or not to generate and save unique numeric IDs
+///   for each person
+/// - `save_ssns`: Whether or not to save the fake Social Security numbers
+/// - `save_salaries`: Whether or not to save generated salary data
+/// - `people`: The list of randomly generated people to save. Note that this
+///   parameter isn't a reference and is, therefore, consumed by this
+///   function.
+///
+/// # Returns
+///
+/// - `Ok(total)`: The save was successful, and `total` people were written
+/// - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
 pub fn write_people(
     path: &PathBuf,
     output_format: OutputFormat,
@@ -264,41 +250,38 @@ pub fn write_people(
 // Private Members
 // ----------------------------------------------------------------------------
 
-/**
- * Creates a JSON Lines file from a vector of randomly generated `Person`
- * objects. JSON Lines is a line-by-line JSON format, where each object
- * occupies its own text line, and there's no enclosing object or array. For
- * instance:
- *
- * ```
- * { "first_name": "Moe", ... },
- * { "first_name": "Larry", ... },
- * { "first_name": "Curly", ... },
- * ...
- * ```
- *
- * JSON files of this form are well-suited for ingesting into distributed
- * systems such as Apache Spark, for processing with line-based Unix tools,
- * etc.
- *
- * # Arguments
- *
- * - `path`: The path to the JSON file to create or overwrite
- * - `header_format`: What style of JSON keys to use.
- * - `generate_ids`: Whether or not to generate and save unique numeric IDs
- *                   for each person
- * - `save_ssns`: Whether or not to save the fake Social Security numbers
- * - `save_salaries`: Whether or not to save generated salary data
- * - `people`: The list of randomly generated people to save. Note that this
- *             parameter isn't a reference and is, therefore, consumed by this
- *             function.
- *
- * # Returns
- *
- * - `Ok(total)`: The save was successful, and `total` people were written
- * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
- */
-
+/// Creates a JSON Lines file from a vector of randomly generated `Person`
+///  objects. JSON Lines is a line-by-line JSON format, where each object
+///  occupies its own text line, and there's no enclosing object or array. For
+///  instance:
+///
+///  ```
+///  { "first_name": "Moe", ... },
+///  { "first_name": "Larry", ... },
+///  { "first_name": "Curly", ... },
+///  ...
+///  ```
+///
+///  JSON files of this form are well-suited for ingesting into distributed
+///  systems such as Apache Spark, for processing with line-based Unix tools,
+///  etc.
+///
+///  # Arguments
+///
+///  - `path`: The path to the JSON file to create or overwrite
+///  - `header_format`: What style of JSON keys to use.
+///  - `generate_ids`: Whether or not to generate and save unique numeric IDs
+///                    for each person
+///  - `save_ssns`: Whether or not to save the fake Social Security numbers
+///  - `save_salaries`: Whether or not to save generated salary data
+///  - `people`: The list of randomly generated people to save. Note that this
+///              parameter isn't a reference and is, therefore, consumed by this
+///              function.
+///
+///  # Returns
+///
+///  - `Ok(total)`: The save was successful, and `total` people were written
+///  - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
 fn write_jsonl(
     path: &PathBuf,
     header_format: HeaderFormat,
@@ -325,36 +308,34 @@ fn write_jsonl(
     Ok(people.len())
 }
 
-/**
- * Creates a JSON document from a vector of randomly generated `Person` objects.
- * The JSON output is of this form (though _not_ pretty-printed):
- *
- * ```
- * {"people": [
- *   { "first_name": "Moe", ... },
- *   { "first_name": "Larry", ... },
- *   { "first_name": "Curly", ... },
- *   ...
- * ]}
- * ```
- *
- * # Arguments
- *
- * - `path`: The path to the JSON file to create or overwrite
- * - `header_format`: What style of JSON keys to use.
- * - `generate_ids`: Whether or not to generate and save unique numeric IDs
- *                   for each person
- * - `save_ssns`: Whether or not to save the fake Social Security numbers
- * - `save_salaries`: Whether or not to save generated salary data
- * - `people`: The list of randomly generated people to save. Note that this
- *             parameter isn't a reference and is, therefore, consumed by this
- *             function.
- *
- * # Returns
- *
- * - `Ok(total)`: The save was successful, and `total` people were written
- * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
- */
+/// Creates a JSON document from a vector of randomly generated `Person`
+/// objects. The JSON output is of this form (though _not_ pretty-printed):
+///
+/// ```
+/// {"people": [
+///    { "first_name": "Moe", ... },
+///    { "first_name": "Larry", ... },
+///    { "first_name": "Curly", ... },
+///    ...
+///  ]}
+///  ```
+///
+///  # Arguments
+///
+///  - `path`: The path to the JSON file to create or overwrite
+///  - `header_format`: What style of JSON keys to use.
+///  - `generate_ids`: Whether or not to generate and save unique numeric IDs
+///                    for each person
+///  - `save_ssns`: Whether or not to save the fake Social Security numbers
+///  - `save_salaries`: Whether or not to save generated salary data
+///  - `people`: The list of randomly generated people to save. Note that this
+///              parameter isn't a reference and is, therefore, consumed by this
+///              function.
+///
+///  # Returns
+///
+///  - `Ok(total)`: The save was successful, and `total` people were written
+///  - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
 fn write_json(
     path: &PathBuf,
     header_format: HeaderFormat,
@@ -386,25 +367,23 @@ fn write_json(
     Ok(people.len())
 }
 
-/**
- * Creates a CSV from a vector of randomly generated `Person` objects.
- *
- * # Arguments
- *
- * - `path`: The path to the CSV file to create or overwrite
- * - `header_format`: What style of CSV header names or JSON keys to use.
- * - `generate_ids`: Whether or not to generate and save unique numeric IDs
- *                   for each person
- * - `save_ssns`: Whether or not to save the fake Social Security numbers
- * - `people`: The list of randomly generated people to save. Note that this
- *             parameter isn't a reference and is, therefore, consumed by this
- *             function.
- *
- * # Returns
- *
- * - `Ok(total)`: The save was successful, and `total` people were written
- * - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
- */
+/// Creates a CSV from a vector of randomly generated `Person` objects.
+///
+/// # Arguments
+///
+/// - `path`: The path to the CSV file to create or overwrite
+/// - `header_format`: What style of CSV header names or JSON keys to use.
+/// - `generate_ids`: Whether or not to generate and save unique numeric IDs
+///                   for each person
+/// - `save_ssns`: Whether or not to save the fake Social Security numbers
+/// - `people`: The list of randomly generated people to save. Note that this
+///             parameter isn't a reference and is, therefore, consumed by this
+///             function.
+///
+/// # Returns
+///
+/// - `Ok(total)`: The save was successful, and `total` people were written
+/// - `Err(msg)`: Unable to write the CSV file; `msg` explains why.
 fn write_csv(
     path: &PathBuf,
     header_format: HeaderFormat,
@@ -475,21 +454,19 @@ fn write_csv(
     Ok(people.len())
 }
 
-/**
- * Map a `Person` object to a JSON `JsonValue`.
- *
- * # Arguments
- *
- * - `person`: The `Person` object
- * - `headers`: A map of the keys to use, from `get_headers()`
- * - `opt_id`: A `Some` with the generated ID for the user, or `None` for no ID
- * - `save_ssn`: Whether or not to save the Social Security number
- *
- * # Returns
- *
- * - `Ok(JsonValue)` if the conversion worked
- * - `Err(msg)` if it failed
- */
+/// Map a `Person` object to a JSON `JsonValue`.
+///
+/// # Arguments
+///
+/// - `person`: The `Person` object
+/// - `headers`: A map of the keys to use, from `get_headers()`
+/// - `opt_id`: A `Some` with the generated ID for the user, or `None` for no ID
+/// - `save_ssn`: Whether or not to save the Social Security number
+///
+/// # Returns
+///
+/// - `Ok(JsonValue)` if the conversion worked
+/// - `Err(msg)` if it failed
 fn person_to_json_object(
     person: &Person,
     headers: &HashMap<&str, String>,
@@ -588,23 +565,21 @@ fn get_headers(header_format: HeaderFormat) -> HashMap<&'static str, String> {
     m
 }
 
-/**
- * Randomly generate a single `Person`.
- *
- * # Arguments
- *
- * - `first_names`: The first names from which to choose a random first name
- * - `last_names`: The last names from which to choose a random last name
- * - `gender`: The assigned gender
- * - `epoch_start`: The starting year for birth dates, as a Unix timestamp
- * - `epoch_end`: The ending year for birth dates, as a Unix timestamp
- * - `ssn_prefixes`: The set of known unused Social Security prefixes (the
- *                   first three numbers of an SSN).
- *
- * # Returns
- *
- * The generated `Person`.
- */
+/// Randomly generate a single `Person`.
+///
+/// # Arguments
+///
+/// - `first_names`: The first names from which to choose a random first name
+/// - `last_names`: The last names from which to choose a random last name
+/// - `gender`: The assigned gender
+/// - `epoch_start`: The starting year for birth dates, as a Unix timestamp
+/// - `epoch_end`: The ending year for birth dates, as a Unix timestamp
+/// - `ssn_prefixes`: The set of known unused Social Security prefixes (the
+///                   first three numbers of an SSN).
+///
+/// # Returns
+///
+/// The generated `Person`.
 fn make_person(
     first_names: &Vec<String>,
     last_names: &Vec<String>,

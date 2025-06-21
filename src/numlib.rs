@@ -2,25 +2,23 @@
 
 use funty::Integral;
 
-/**
- * Given a string, this function parses the string into an integer. The
- * function is generic and should support all primitive integral types.
- * The primary reason to use this function over the `String::parse()` or
- * something like `u32::from_str_radix()" is that, on error, this function
- * returns an already-formatted informative error message, one that's more
- * useful than the one from `String::parse()`. (the `::from_str_radix()`
- * functions don't return a string at all; they return an error struct.)
- *
- * # Arguments
- *
- * `s` - the string to convert
- * `radix` - the radix or base
- *
- * # Returns
- *
- * `Ok(n)` - the parsed integral result (`n`)
- * `Err(msg)` - not a valid number, with an appropriate error message.
- */
+/// Given a string, this function parses the string into an integer. The
+/// function is generic and should support all primitive integral types.
+/// The primary reason to use this function over the `String::parse()` or
+/// something like `u32::from_str_radix()" is that, on error, this function
+/// returns an already-formatted informative error message, one that's more
+/// useful than the one from `String::parse()`. (the `::from_str_radix()`
+/// functions don't return a string at all; they return an error struct.)
+///
+/// # Arguments
+///
+/// `s` - the string to convert
+/// `radix` - the radix or base
+///
+/// # Returns
+///
+/// `Ok(n)` - the parsed integral result (`n`)
+/// `Err(msg)` - not a valid number, with an appropriate error message.
 pub fn parse_int<T>(s: &String, radix: u32) -> Result<T, String>
     where T: Integral
 {

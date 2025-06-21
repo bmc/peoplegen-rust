@@ -23,7 +23,7 @@ const SALARY_MEAN_DEFAULT: &str = "58260";
 // This is arbitrary
 const SALARY_SIGMA_DEFAULT: &str = "5000";
 
-/// The header format to use in the output CSV file.
+/// The header format to use in the output CSV file, as a typesafe enum.
 #[derive(Debug, Copy, Clone)]
 pub enum HeaderFormat {
     SnakeCase,
@@ -31,7 +31,8 @@ pub enum HeaderFormat {
     Pretty
 }
 
-// The desired output format
+// Encodes the desired output format as a typesafe enum, so we can
+// avoid using strings everywhere.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum OutputFormat {
     JsonPretty,
@@ -40,10 +41,8 @@ pub enum OutputFormat {
 }
 
 impl OutputFormat {
-    /**
-     * Returns a `str` representation of an output format, suitable for
-     * printing or formatting.
-     */
+    /// Returns a `str` representation of an output format, suitable for
+    /// printing or formatting.
     pub fn to_str(&self) -> &str {
         match self {
             OutputFormat::JsonPretty => "JSON",
@@ -74,11 +73,12 @@ pub struct Arguments {
     pub total: u64
 }
 
-/**
- * Parse the command line arguments into an `Arguments` structure.
- * Returns an `Ok` with the parsed arguments, or an `Err` with a message
- * on error.
-*/
+
+/// Parse the command line arguments into an `Arguments` structure.
+///
+/// # Returns
+///
+/// `Ok` with the parsed arguments, or an `Err` with a message on error.
 pub fn parse_args() -> Result<Arguments, String> {
     let header_format_map: HashMap<&str, HeaderFormat> = HashMap::from([
         ("snake", HeaderFormat::SnakeCase),
@@ -290,6 +290,14 @@ See https://github.com/bmc/peoplegen-rust for more information.");
 }
 
 /// Given the current date, return the year `years` ago.
+///
+/// # Arguments
+///
+/// * `years` - The number of years to go back from the current date.
+///
+/// # Returns
+///
+/// The year that was `years` ago.
 fn year_before_now(years: u32) -> u32 {
     // There's no Duration::years(), so just use weeks and multiply.
     let y = years as i64;
