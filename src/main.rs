@@ -4,6 +4,9 @@ use std::process;
 use crate::args::{Arguments, parse_args};
 use crate::people::{read_names_file, make_people, write_people};
 
+// The comp crate adds macros (like result! and iter!) that permit a list
+// comprehension-like syntax for Option, Result, and Iterator, similar to
+// Scala's for-comprehensions.
 #[macro_use]
 extern crate comp;
 
