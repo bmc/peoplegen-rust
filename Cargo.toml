@@ -1,7 +1,12 @@
 [package]
 name = "peoplegen"
+description = "Generate fake people data in CSV, JSON, or JSON Lines format."
 version = "0.2.2"
-edition = "2021"
+edition = "2024"
+homepage = "https://github.com/bmc/peoplegen-rust"
+authors = ["Brian Clapper <bmc@clapper.org>"]
+publish = false
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
