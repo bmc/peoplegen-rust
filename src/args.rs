@@ -105,7 +105,7 @@ pub fn parse_args() -> Result<Arguments, String> {
         // See https://stackoverflow.com/a/27841363/53495
         .version(env!("CARGO_PKG_VERSION"))
         .author("bmc@clapper.org")
-        .about("Generate fake people data in a CSV")
+        .about("Generate fake people data in a CSV, JSON, or JSON Lines file.")
         .arg(Arg::new("female")
                  .short('f')
                  .long("female-pct")
@@ -129,83 +129,99 @@ pub fn parse_args() -> Result<Arguments, String> {
 If not specified, it defaults to the value of environment variable
 {}.", ENV_FEMALE_FIRST_NAMES_FILE)))
         .arg(Arg::new("male-first-names")
-                 .short('M')
-                 .long("male-names")
-                 .value_name("<path>")
-                 .help(format!(
-"Path to text file containing male first names, one per line.
-If not specified, it defaults to the value of environment variable
-{}.", ENV_MALE_FIRST_NAMES_FILE)))
-             .arg(Arg::new("last-names")
-                 .short('L')
-                 .long("last-names")
-                 .value_name("PATH")
-                 .help(format!(
-"Path to text file containing last names, one per line. If not
-specified, defaults to the value of environment variable
-{}.", ENV_LAST_NAMES_FILE)))
+            .short('M')
+            .long("male-names")
+            .value_name("<path>")
+            .help(format!(concat!(
+                "Path to text file containing male first names, one per ",
+                "line. If not specified, it defaults to the value of ",
+                "environment variable {}"),
+                ENV_MALE_FIRST_NAMES_FILE
+            ))
+        )
+        .arg(Arg::new("last-names")
+            .short('L')
+            .long("last-names")
+            .value_name("PATH")
+            .help(format!(concat!(
+                "Path to text file containing last names, one per line. ",
+                "If not specified, defaults to the value of environment ",
+                "variable {}."),
+                ENV_LAST_NAMES_FILE
+            ))
+        )
         .arg(Arg::new("ssn")
-                 .short('s')
-                 .long("ssn")
-                 .action(ArgAction::SetTrue)
-                 .help("Generate fake (and invalid) Social Security numbers"))
+            .short('s')
+            .long("ssn")
+            .action(ArgAction::SetTrue)
+            .help("Generate fake (and invalid) Social Security numbers")
+        )
         .arg(Arg::new("salary")
-                 .short('S')
-                 .long("salary")
-                 .action(ArgAction::SetTrue)
-                 .help(format!(
-"Generate a salary for each person. Salaries are generated as
-a normal (Poisson) distribution with a mean salary of {} (the
-2021 mean salary for all professions, according to the Bureau of
-Labor Statistics) and a sigma (standard deviation) of {}. You can
-change those values with --salary-mean and --salary-sigma",
-SALARY_MEAN_DEFAULT, SALARY_SIGMA_DEFAULT)))
+            .short('S')
+            .long("salary")
+            .action(ArgAction::SetTrue)
+            .help(format!(concat!(
+                "Generate a salary for each person. Salaries are ",
+                "generated as a normal (Poisson) distribution with a mean ",
+                "salary of {} (the 2021 mean salary for all professions, ",
+                "according to the Bureau of Labor Statistics) and a sigma ",
+                "(standard deviation) of {}. You can change those values ",
+                "with the --salary-mean and --salary-sigma options."),
+                SALARY_MEAN_DEFAULT, SALARY_SIGMA_DEFAULT
+            ))
+        )
         .arg(Arg::new("salary-mean")
-                 .long("salary-mean")
-                 .value_parser(clap::value_parser!(u32))
-                 .default_value(SALARY_MEAN_DEFAULT)
-                 .help(format!("Mean salary to use.")))
+            .long("salary-mean")
+            .value_parser(clap::value_parser!(u32))
+            .default_value(SALARY_MEAN_DEFAULT)
+            .help(format!("Mean salary to use.")))
         .arg(Arg::new("salary-sigma")
-                 .long("salary-sigma")
-                 .value_parser(clap::value_parser!(u32))
-                 .default_value(SALARY_SIGMA_DEFAULT)
-                 .help(format!("Sigma (standard deviation) for salaries.")))
+            .long("salary-sigma")
+            .value_parser(clap::value_parser!(u32))
+            .default_value(SALARY_SIGMA_DEFAULT)
+            .help(format!("Sigma (standard deviation) for salaries.")))
         .arg(Arg::new("id")
-                 .short('i')
-                 .long("id")
-                 .action(ArgAction::SetTrue)
-                 .help("Generate unique IDs for each person"))
+            .short('i')
+            .long("id")
+            .action(ArgAction::SetTrue)
+            .help("Generate unique IDs for each person"))
         .arg(Arg::new("header-format")
-                 .short('H')
-                 .long("header-format")
-                 .default_value("snake")
-                 .help(format!("CSV header format, one of: {}",
-                               header_formats.join(", "))))
+            .short('H')
+            .long("header-format")
+            .default_value("snake")
+            .help(format!("CSV header format, one of: {}",
+                          header_formats.join(", ")))
+        )
         .arg(Arg::new("year-min")
-                 .short('y')
-                 .long("year-min")
-                 .value_parser(clap::value_parser!(u32))
-                 .help(format!("The starting year for birth dates. Default: {}",
-                       default_year_min)))
+            .short('y')
+            .long("year-min")
+            .value_parser(clap::value_parser!(u32))
+            .help(format!("The starting year for birth dates. Default: {}",
+                  default_year_min))
+        )
         .arg(Arg::new("year-max")
-                 .short('Y')
-                 .long("year-max")
-                 .value_parser(clap::value_parser!(u32))
-                 .help(format!("The ending year for birth dates. Default: {}",
-                       default_year_max)))
+            .short('Y')
+            .long("year-max")
+            .value_parser(clap::value_parser!(u32))
+            .help(format!("The ending year for birth dates. Default: {}",
+                  default_year_max))
+        )
         .arg(Arg::new("output")
-                 .required(true)
-                 .value_name("OUTPUT_FILE")
-                 .help("Path to output file"))
+            .required(true)
+            .value_name("OUTPUT_FILE")
+            .help("Path to output file")
+        )
         .arg(Arg::new("total")
-                 .required(true)
-                 .value_name("TOTAL")
-                 .value_parser(clap::value_parser!(u64))
-                 .help("How many people to generate"))
-        .after_help(
-"Supports CSV, JSON, and JSON Lines output formats. The output format is
-determined by the output file extension (\".csv\", \".json\", or \".jsonl\").
-See https://github.com/bmc/peoplegen-rust for more information.");
+            .required(true)
+            .value_name("TOTAL")
+            .value_parser(clap::value_parser!(u64))
+            .help("How many people to generate")
+        )
+        .after_help(concat!(
+            "Supports CSV, JSON, and JSON Lines output formats. The output ", "format is determined by the output file extension (\".csv\", ",
+            "\".json\", or \".jsonl\"). ",
+            "See https://github.com/bmc/peoplegen-rust for more information."
+        ));
 
     let matches = parser.get_matches();
 
