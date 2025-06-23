@@ -334,22 +334,23 @@ fn validate(args: Arguments) -> Result<Arguments, String> {
     }
 
     else if path_is_empty(&args.male_first_names_file) {
-        Err(String::from(format!(
-            "Male first names file not specified, and {} not set in environment.",
+        Err(String::from(format!(concat!(
+            "No male first names file was specified, and {} is not set in ", "the environment."),
             ENV_MALE_FIRST_NAMES_FILE
         )))
     }
 
     else if path_is_empty(&args.female_first_names_file) {
-        Err(String::from(format!(
-            "Female first names file not specified, and {} not set in environment.",
+        Err(String::from(format!(concat!(
+            "No female first names file was specified, and {} is not set in ", "the environment."),
             ENV_FEMALE_FIRST_NAMES_FILE
         )))
     }
 
     else if path_is_empty(&args.last_names_file) {
-        Err(String::from(format!(
-            "Last names file not specified, and {} is not set in environment.",
+        Err(String::from(format!(concat!(
+            "No last names file was specified, and {} is not set in the ",
+            "environment."),
             ENV_LAST_NAMES_FILE
         )))
     }
