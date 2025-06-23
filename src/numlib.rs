@@ -23,8 +23,11 @@ pub fn parse_int<T>(s: &String, radix: u32) -> Result<T, String>
     where T: Integral
 {
     T::from_str_radix(s, radix)
-        .map_err(|_| format!("\"{}\" is not a valid base-{} number for this type",
-                 s, radix))
+        .map_err(|_| format!(
+            "\"{}\" is not a valid base-{} number for this type",
+             s, radix
+            )
+        )
 
     //s.parse::<T>().map_err(|_| format!("\"{s}\" is an invalid number"))
 }
